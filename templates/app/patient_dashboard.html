@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% block page_class %}page-app{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}" />{% endblock %}
+{% block body %}
+{% set role = 'patient' %}
+{% include 'partials/sidebar.html' %}
+<div class="app-main">
+  {% include 'partials/network-background.html' %}
+  {% include 'partials/app_navbar.html' %}
+  <main class="app-content">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Patient Dashboard</div>
+        <div class="page-subtitle">Hello, John Doe — Your health data is encrypted and secure</div>
+      </div>
+      <div class="flex gap-2">
+        <a href="{{ url_for('secure_chat') }}" class="btn btn-primary"><i class="fa-solid fa-comment-medical"></i> Message Doctor</a>
+        <a href="{{ url_for('notifications') }}" class="btn btn-outline"><i class="fa-solid fa-bell"></i> Notifications</a>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="grid-4" style="margin-bottom:2rem;">
+      <div class="stat-card"><div class="stat-icon blue"><i class="fa-solid fa-file-medical"></i></div><div><div class="stat-value">3</div><div class="stat-label">Active Referrals</div><div class="stat-change up">1 completed</div></div></div>
+      <div class="stat-card"><div class="stat-icon teal"><i class="fa-solid fa-prescription-bottle-medical"></i></div><div><div class="stat-value">2</div><div class="stat-label">Prescriptions</div><div class="stat-change up">↑ 1 new</div></div></div>
+      <div class="stat-card"><div class="stat-icon cyan"><i class="fa-solid fa-comment-medical"></i></div><div><div class="stat-value">5</div><div class="stat-label">Messages</div><div class="stat-change up">2 unread</div></div></div>
+      <div class="stat-card"><div class="stat-icon green"><i class="fa-solid fa-shield-halved"></i></div><div><div class="stat-value">100%</div><div class="stat-label">Data Encrypted</div><div class="stat-change up">Always on</div></div></div>
+    </div>
+
+    <div class="grid-2">
+      <!-- My Referrals -->
+      <div class="section-block">
+        <div class="section-block-header">
+          <div class="section-block-title"><i class="fa-solid fa-route" style="color:var(--cyan);margin-right:0.5rem;"></i>My Referral Journey</div>
+        </div>
+        <!-- Referral Card -->
+        <div class="card" style="margin-bottom:1rem;">
+          <div class="flex items-center justify-between" style="margin-bottom:1rem;">
+            <div><div style="font-size:0.9rem;font-weight:600;color:var(--white);">Cardiology Referral</div><div style="font-size:0.78rem;color:var(--gray);">REF-2024-0892 · Dr. Sarah Khan → Dr. Ahmed Rahman</div></div>
+            <div class="badge badge-teal">In Progress</div>
+          </div>
+          <!-- Progress track -->
+          <div style="display:flex;align-items:center;gap:0;margin-bottom:1rem;">
+            {% for step, done in [('Referred',True),('Received',True),('In Review',True),('Responded',False),('Complete',False)] %}
+            <div style="flex:1;text-align:center;">
+              <div style="width:28px;height:28px;border-radius:50%;margin:0 auto 4px;display:grid;place-items:center;font-size:0.7rem;background:{% if done %}var(--teal){% else %}var(--navy-mid){% endif %};border:2px solid {% if done %}var(--teal){% else %}var(--border){% endif %};">
+                {% if done %}<i class="fa-solid fa-check" style="font-size:0.6rem;color:#fff;"></i>{% else %}<span style="color:var(--gray);">{{ loop.index }}</span>{% endif %}
+              </div>
+              <div style="font-size:0.62rem;color:{% if done %}var(--teal){% else %}var(--gray){% endif %};">{{ step }}</div>
+            </div>
+            {% if not loop.last %}<div style="flex:0.5;height:2px;background:{% if done %}var(--teal){% else %}var(--border){% endif %};margin-bottom:20px;"></div>{% endif %}
+            {% endfor %}
+          </div>
+          <div style="background:var(--navy);border-radius:var(--radius-sm);padding:0.75rem;font-size:0.8rem;color:var(--gray);">
+            <i class="fa-solid fa-lock" style="color:var(--teal);margin-right:0.4rem;"></i>Medical details are encrypted. Only your care team can view the clinical content.
+          </div>
+        </div>
+
+        <!-- Prescription preview -->
+        <div class="section-block-header" style="margin-top:1.5rem;">
+          <div class="section-block-title"><i class="fa-solid fa-prescription-bottle-medical" style="color:var(--teal);margin-right:0.5rem;"></i>My Prescriptions</div>
+          <a href="{{ url_for('prescriptions') }}" class="btn btn-outline btn-sm">View All</a>
+        </div>
+        <div class="rx-card" style="margin-bottom:0.75rem;">
+          <div class="rx-header">
+            <div class="flex items-center justify-between">
+              <div><div style="font-size:0.9rem;font-weight:600;color:var(--white);">Prescription #RX-2024-041</div><div style="font-size:0.75rem;color:var(--gray);">Dr. Sarah Khan · 12 Apr 2026</div></div>
+              <div class="badge badge-green"><i class="fa-solid fa-signature"></i> Signed</div>
+            </div>
+          </div>
+          <div class="rx-body">
+            <div class="rx-med-list">
+              <div class="rx-med-item"><i class="fa-solid fa-capsules" style="color:var(--cyan);width:20px;"></i><div><div class="rx-med-name">Amlodipine 5mg</div><div class="rx-med-dose">1 tablet daily · 30 days</div></div></div>
+              <div class="rx-med-item" style="border:none;"><i class="fa-solid fa-capsules" style="color:var(--teal);width:20px;"></i><div><div class="rx-med-name">Metoprolol 25mg</div><div class="rx-med-dose">1 tablet twice daily · 30 days</div></div></div>
+            </div>
+          </div>
+          <div class="rx-footer"><div class="badge badge-teal"><i class="fa-solid fa-fingerprint"></i> HMAC Verified</div><div style="font-size:0.75rem;color:var(--gray);">Valid until May 12, 2026</div></div>
+        </div>
+      </div>
+
+      <div>
+        <!-- Secure info -->
+        <div class="zk-badge" style="margin-bottom:1.5rem;">
+          <div class="zk-icon">🔐</div>
+          <div class="zk-title">Your Privacy is Protected</div>
+          <div class="zk-desc">Your medical data is encrypted with keys only your care team holds. MedLife administrators cannot view your medical content — ever.</div>
+          <div class="badge badge-teal" style="margin-top:1rem;display:inline-flex;"><i class="fa-solid fa-eye-slash"></i> Admin Zero-Knowledge</div>
+        </div>
+        <!-- Notification preview -->
+        <div class="section-block">
+          <div class="section-block-header">
+            <div class="section-block-title"><i class="fa-solid fa-bell" style="color:var(--warning);margin-right:0.5rem;"></i>Recent Notifications</div>
+            <a href="{{ url_for('notifications') }}" class="btn btn-outline btn-sm">All</a>
+          </div>
+          <div class="notif-item">
+            <div class="notif-icon-wrap" style="background:rgba(20,184,166,0.15);color:var(--teal);"><i class="fa-solid fa-file-medical"></i></div>
+            <div><div class="notif-text">Specialist has reviewed your referral</div><div class="notif-sub">Dr. Ahmed Rahman · Cardiology</div></div>
+            <div class="notif-time">1h</div>
+          </div>
+          <div class="notif-item">
+            <div class="notif-icon-wrap" style="background:rgba(34,197,94,0.15);color:var(--success);"><i class="fa-solid fa-prescription"></i></div>
+            <div><div class="notif-text">New prescription issued</div><div class="notif-sub">Dr. Sarah Khan signed your RX</div></div>
+            <div class="notif-time">4h</div>
+          </div>
+          <div class="notif-item" style="border:none;">
+            <div class="notif-icon-wrap" style="background:rgba(30,136,229,0.15);color:var(--med-blue);"><i class="fa-solid fa-comment-medical"></i></div>
+            <div><div class="notif-text">New encrypted message from Dr. Khan</div><div class="notif-sub">Regarding your appointment</div></div>
+            <div class="notif-time">Yesterday</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+{% endblock %}

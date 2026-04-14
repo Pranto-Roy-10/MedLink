@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block page_class %}page-info{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/landing.css') }}" />{% endblock %}
+{% block title %}Features — MedLife{% endblock %}
+{% block body %}
+{% include 'partials/navbar.html' %}
+
+<section style="padding:10rem 0 5rem;background:radial-gradient(ellipse 70% 50% at 50% 0%,rgba(0,188,212,0.04),transparent),var(--navy);position:relative;overflow:hidden;">
+  {% include 'partials/network-background.html' %}
+  <div class="container" style="text-align:center;position:relative;z-index:1;">
+    <div class="section-label" style="justify-content:center;"><i class="fa-solid fa-star"></i> Platform Features</div>
+    <h1 style="margin:1rem 0;">Everything You Need for<br><span class="text-gradient">Secure Medical Referrals</span></h1>
+    <p style="max-width:580px;margin:0 auto;">A comprehensive suite of tools — encrypted referrals, digital signatures, role-based access, and full audit logging — designed from the ground up for healthcare security.</p>
+  </div>
+</section>
+
+<section class="section" style="background:var(--navy);">
+  <div class="container">
+    <!-- Feature category: Core -->
+    <div style="margin-bottom:3.5rem;" class="reveal">
+      <div class="section-label" style="margin-bottom:1.5rem;"><i class="fa-solid fa-lock"></i> Core Security</div>
+      <div class="grid-3">
+        {% for f in [
+          ('fa-lock','Symmetric Encryption','All referrals, prescriptions and messages are encrypted before storage or transmission.','var(--med-blue)','blue'),
+          ('fa-key','Public Key Infrastructure','Asymmetric keys handle identity verification and secure key exchange between parties.','var(--teal)','teal'),
+          ('fa-signature','Digital Signatures','Every document is cryptographically signed. Tampering is immediately detectable.','var(--cyan)','cyan'),
+          ('fa-fingerprint','HMAC Integrity','MAC tags are generated and verified on every data object to detect modification.','var(--success)','green'),
+          ('fa-mobile-screen-button','Two-Factor Auth','TOTP-based 2FA is mandatory for all accounts, adding a critical second layer of security.','var(--warning)','warning'),
+          ('fa-eye-slash','Tamper Detection','Real-time monitoring detects and alerts on any data inconsistency or integrity failure.','var(--danger)','red'),
+        ] %}
+        <div class="feature-card reveal">
+          <div class="feature-icon" style="background:rgba(30,136,229,0.1);color:{{ f[3] }};"><i class="fa-solid {{ f[0] }}"></i></div>
+          <div class="feature-title">{{ f[1] }}</div>
+          <div class="feature-desc">{{ f[2] }}</div>
+          <div class="badge badge-{{ f[4] }}" style="margin-top:1rem;font-size:0.7rem;">Core Feature</div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Feature category: Referrals -->
+    <div style="margin-bottom:3.5rem;" class="reveal">
+      <div class="section-label" style="margin-bottom:1.5rem;"><i class="fa-solid fa-file-medical"></i> Referral Management</div>
+      <div class="grid-3">
+        {% for f in [
+          ('fa-file-circle-plus','Create Encrypted Referral','Compose referrals with clinical notes. Content is encrypted to the specialist\'s public key.','var(--cyan)'),
+          ('fa-paper-plane','Secure Delivery','Referrals are transmitted with HMAC tags and digital signatures attached.','var(--med-blue)'),
+          ('fa-unlock','Decrypt & Verify','Specialists decrypt referrals with their private key and verify the doctor\'s signature.','var(--teal)'),
+          ('fa-clock-rotate-left','Full Referral History','Track the complete lifecycle of every referral from creation to specialist response.','var(--success)'),
+          ('fa-reply-all','Encrypted Responses','Specialists respond with encrypted, signed notes that only the referring doctor can read.','var(--warning)'),
+          ('fa-route','Patient Tracking','Patients see real-time status of their referral journey without exposing clinical content.','var(--cyan)'),
+        ] %}
+        <div class="feature-card reveal">
+          <div class="feature-icon" style="background:rgba(0,188,212,0.1);color:{{ f[3] }};"><i class="fa-solid {{ f[0] }}"></i></div>
+          <div class="feature-title">{{ f[1] }}</div>
+          <div class="feature-desc">{{ f[2] }}</div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Feature category: Admin & Audit -->
+    <div class="reveal">
+      <div class="section-label" style="margin-bottom:1.5rem;"><i class="fa-solid fa-shield-halved"></i> Admin & Compliance</div>
+      <div class="grid-3">
+        {% for f in [
+          ('fa-scroll','Immutable Audit Log','Every platform action is logged with timestamp, user, IP, and cryptographic context.','var(--success)'),
+          ('fa-users-gear','Role Management','Admins assign and revoke roles without ever accessing patient medical content.','var(--med-blue)'),
+          ('fa-rotate','Key Rotation','Admins can initiate platform-wide key rotation. All rotations are audited and logged.','var(--warning)'),
+          ('fa-server','Platform Health','Real-time view of encryption coverage, audit integrity, uptime, and 2FA adoption rates.','var(--teal)'),
+          ('fa-magnifying-glass-chart','Session Monitoring','Track active sessions, detect anomalies, and remotely terminate suspicious sessions.','var(--danger)'),
+          ('fa-eye-slash','Zero Knowledge Admin','Administrators operate with mathematically enforced zero access to medical content.','var(--cyan)'),
+        ] %}
+        <div class="feature-card reveal">
+          <div class="feature-icon" style="background:rgba(34,197,94,0.1);color:{{ f[3] }};"><i class="fa-solid {{ f[0] }}"></i></div>
+          <div class="feature-title">{{ f[1] }}</div>
+          <div class="feature-desc">{{ f[2] }}</div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="section-sm" style="background:var(--navy-light);border-top:1px solid var(--border);">
+  <div class="container" style="text-align:center;">
+    <h2 style="margin-bottom:1rem;">Ready to Experience <span class="text-gradient">MedLife?</span></h2>
+    <div class="flex justify-center gap-3" style="margin-top:1.5rem;">
+      <a href="{{ url_for('register') }}" class="btn btn-primary btn-lg"><i class="fa-solid fa-user-plus"></i> Get Started</a>
+      <a href="{{ url_for('dashboard') }}" class="btn btn-outline btn-lg"><i class="fa-solid fa-gauge-high"></i> View Demo</a>
+    </div>
+  </div>
+</section>
+
+{% include 'partials/footer.html' %}
+{% endblock %}

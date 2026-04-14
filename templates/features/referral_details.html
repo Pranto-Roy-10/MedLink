@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% block page_class %}page-feature{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}" />{% endblock %}
+{% block body %}
+{% set role = role | default('doctor') %}
+{% include 'partials/sidebar.html' %}
+<div class="app-main">
+  {% include 'partials/network-background.html' %}
+  {% include 'partials/app_navbar.html' %}
+  <main class="app-content">
+    <div class="page-header">
+      <div>
+        <div class="breadcrumb"><a href="{{ url_for('sent_referrals') }}">Referrals</a><span class="breadcrumb-sep">/</span>REF-2026-0892</div>
+        <div class="page-title">Referral Details</div>
+        <div class="page-subtitle">REF-2026-0892 · John Doe → Dr. Ahmed Rahman</div>
+      </div>
+      <div class="flex gap-2">
+        <div class="badge badge-green"><i class="fa-solid fa-signature"></i> Signature Valid</div>
+        <div class="badge badge-teal"><i class="fa-solid fa-fingerprint"></i> HMAC Verified</div>
+      </div>
+    </div>
+
+    <div class="grid-2" style="align-items:start;">
+      <!-- Left: Referral Content -->
+      <div>
+        <div class="card" style="margin-bottom:1.25rem;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;">
+            <div>
+              <div style="font-size:0.75rem;color:var(--gray);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.25rem;">Referral ID</div>
+              <div style="font-size:1rem;font-weight:700;color:var(--white);font-family:monospace;">REF-2026-0892</div>
+            </div>
+            <div class="badge badge-teal">In Progress</div>
+          </div>
+          <div class="grid-2" style="gap:1rem;margin-bottom:1.25rem;">
+            <div><div style="font-size:0.75rem;color:var(--gray);margin-bottom:0.25rem;">Patient</div><div style="font-size:0.9rem;font-weight:600;color:var(--white);">John Doe</div><div style="font-size:0.78rem;color:var(--gray);">P-0042</div></div>
+            <div><div style="font-size:0.75rem;color:var(--gray);margin-bottom:0.25rem;">Referring Doctor</div><div style="font-size:0.9rem;font-weight:600;color:var(--white);">Dr. Sarah Khan</div><div style="font-size:0.78rem;color:var(--gray);">General Physician</div></div>
+            <div><div style="font-size:0.75rem;color:var(--gray);margin-bottom:0.25rem;">Specialist</div><div style="font-size:0.9rem;font-weight:600;color:var(--white);">Dr. Ahmed Rahman</div><div style="font-size:0.78rem;color:var(--gray);">Cardiologist</div></div>
+            <div><div style="font-size:0.75rem;color:var(--gray);margin-bottom:0.25rem;">Date &amp; Time</div><div style="font-size:0.9rem;font-weight:600;color:var(--white);">14 Apr 2026</div><div style="font-size:0.78rem;color:var(--gray);">10:24 AM</div></div>
+          </div>
+          <div style="display:flex;gap:0.75rem;">
+            <div class="badge badge-red"><i class="fa-solid fa-triangle-exclamation"></i> Urgent</div>
+            <div class="badge badge-cyan">Cardiology</div>
+          </div>
+        </div>
+
+        <!-- Encrypted Payload display -->
+        <div class="card" style="margin-bottom:1.25rem;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;">
+            <div style="font-size:0.9rem;font-weight:600;color:var(--white);"><i class="fa-solid fa-lock" style="color:var(--teal);margin-right:0.4rem;"></i>Encrypted Payload</div>
+            <button class="btn btn-teal btn-sm"><i class="fa-solid fa-unlock"></i> Decrypt</button>
+          </div>
+          <div style="background:var(--navy);border-radius:var(--radius-sm);padding:1rem;font-family:monospace;font-size:0.75rem;color:var(--gray);line-height:1.8;word-break:break-all;">
+            <span style="color:var(--teal);">ENCRYPTED BLOCK BEGIN</span><br>
+            AES-256-CBC | IV: a3f19ec2...9e2d18f1<br>
+            <span style="color:var(--gray-dark);">7b9e8f2a1c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0...</span><br><br>
+            <span style="color:var(--blue);">HMAC-SHA256:</span> 82c4a1f0e3b2d9c8a7f6e5d4c3b2a1f0<br>
+            <span style="color:var(--blue);">Signature:</span> RSA-SHA256 | 256 bytes<br>
+            <span style="color:var(--teal);">ENCRYPTED BLOCK END</span>
+          </div>
+          <div class="alert alert-info" style="margin-top:1rem;font-size:0.82rem;"><i class="fa-solid fa-info-circle"></i> Content is encrypted with Dr. Ahmed Rahman's public key. Only the specialist can decrypt this payload.</div>
+        </div>
+
+        <!-- Specialist Response -->
+        <div class="card">
+          <div style="font-size:0.9rem;font-weight:600;color:var(--white);margin-bottom:1rem;"><i class="fa-solid fa-reply" style="color:var(--cyan);margin-right:0.4rem;"></i>Specialist Response</div>
+          <div class="alert alert-success" style="font-size:0.85rem;"><i class="fa-solid fa-circle-check"></i><div><strong>Response Received</strong><br>Dr. Ahmed Rahman reviewed this referral on 14 Apr 2026 at 10:31 AM. Appointment scheduled for Thursday, 17 Apr 2026.</div></div>
+        </div>
+      </div>
+
+      <!-- Right: Security Panel -->
+      <div>
+        <div class="integrity-panel card" style="margin-bottom:1.25rem;">
+          <div style="font-size:0.9rem;font-weight:600;color:var(--white);margin-bottom:1rem;"><i class="fa-solid fa-shield-halved" style="color:var(--teal);margin-right:0.4rem;"></i>Security Verification</div>
+          <div class="integrity-item"><div class="integrity-label"><i class="fa-solid fa-signature"></i> Doctor's Digital Signature</div><div class="integrity-status ok"><i class="fa-solid fa-circle-check"></i> Valid</div></div>
+          <div class="integrity-item"><div class="integrity-label"><i class="fa-solid fa-fingerprint"></i> HMAC Integrity</div><div class="integrity-status ok"><i class="fa-solid fa-circle-check"></i> Verified</div></div>
+          <div class="integrity-item"><div class="integrity-label"><i class="fa-solid fa-eye-slash"></i> Tamper Detection</div><div class="integrity-status ok"><i class="fa-solid fa-circle-check"></i> Unmodified</div></div>
+          <div class="integrity-item"><div class="integrity-label"><i class="fa-solid fa-key"></i> Encryption Algorithm</div><div class="integrity-status ok"><i class="fa-solid fa-circle-check"></i> AES-256-CBC</div></div>
+          <div class="integrity-item" style="border:none;"><div class="integrity-label"><i class="fa-solid fa-lock"></i> Key Exchange</div><div class="integrity-status ok"><i class="fa-solid fa-circle-check"></i> RSA-2048</div></div>
+        </div>
+
+        <!-- Audit trail for this referral -->
+        <div class="card" style="margin-bottom:1.25rem;">
+          <div style="font-size:0.9rem;font-weight:600;color:var(--white);margin-bottom:1rem;"><i class="fa-solid fa-clock-rotate-left" style="color:var(--gray);margin-right:0.4rem;"></i>Event Trail</div>
+          <div class="timeline">
+            <div class="timeline-item"><div class="timeline-time">10:24 AM · 14 Apr</div><div class="timeline-text">Referral created and encrypted</div><div class="timeline-sub">Dr. Sarah Khan · Signature applied</div></div>
+            <div class="timeline-item"><div class="timeline-time">10:24 AM · 14 Apr</div><div class="timeline-text">Referral transmitted to specialist</div><div class="timeline-sub">Delivered to Dr. Ahmed Rahman</div></div>
+            <div class="timeline-item"><div class="timeline-time">10:48 AM · 14 Apr</div><div class="timeline-text">Referral decrypted by specialist</div><div class="timeline-sub">Signature verified · HMAC passed</div></div>
+            <div class="timeline-item" style="padding:0;"><div class="timeline-time">10:31 AM · 14 Apr</div><div class="timeline-text">Specialist response sent</div><div class="timeline-sub">Appointment confirmed · Signed</div></div>
+          </div>
+        </div>
+
+        <div class="flex gap-2">
+          <a href="{{ url_for('secure_chat') }}" class="btn btn-teal" style="flex:1;justify-content:center;"><i class="fa-solid fa-comment-medical"></i> Chat with Specialist</a>
+          <button class="btn btn-outline"><i class="fa-solid fa-download"></i> Export</button>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+{% endblock %}

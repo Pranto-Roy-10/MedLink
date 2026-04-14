@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block page_class %}page-auth{% endblock %}
+{% block title %}Create Account — MedLife{% endblock %}
+{% block body %}
+<div style="min-height:100vh;background:var(--navy);display:flex;flex-direction:column;justify-content:center;align-items:center;padding:2rem;">
+  <a href="{{ url_for('index') }}" class="nav-logo" style="margin-bottom:2rem;display:inline-flex;">
+    <div class="logo-icon">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+        <path d="M12 2L3 7v5c0 5.25 3.75 10.15 9 11.25C17.25 22.15 21 17.25 21 12V7L12 2z" fill="rgba(255,255,255,0.15)" stroke="white" stroke-width="1.5"/>
+        <path d="M12 7v10M7 12h10" stroke="white" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <span class="logo-text">MedLife</span>
+  </a>
+
+  <div style="width:100%;max-width:560px;background:var(--navy-light);border:1px solid var(--border);border-radius:var(--radius-xl);padding:2.5rem;">
+    <div style="text-align:center;margin-bottom:2rem;">
+      <h3 style="font-size:1.5rem;font-weight:700;color:var(--white);margin-bottom:0.4rem;">Create Your Account</h3>
+      <p>Join the secure medical referral network</p>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for cat, msg in messages %}
+      <div class="alert alert-{{ cat }}"><i class="fa-solid fa-circle-info"></i> {{ msg }}</div>
+      {% endfor %}
+    {% endwith %}
+
+    <form method="POST" action="{{ url_for('register') }}">
+      <div class="grid-2" style="gap:1rem;">
+        <div class="form-group">
+          <label class="form-label">First Name</label>
+          <input type="text" name="first_name" class="form-control" placeholder="Sarah" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Last Name</label>
+          <input type="text" name="last_name" class="form-control" placeholder="Khan" required />
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Email Address</label>
+        <input type="email" name="email" class="form-control" placeholder="sarah.khan@hospital.com" required />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Role</label>
+        <select name="role" class="form-control" required>
+          <option value="" disabled selected>Select your role</option>
+          <option value="doctor">Doctor</option>
+          <option value="specialist">Specialist</option>
+          <option value="patient">Patient</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Medical License / ID</label>
+        <input type="text" name="license" class="form-control" placeholder="ML-2024-XXXXX" />
+        <div style="font-size:0.75rem;color:var(--gray);margin-top:0.35rem;">Required for Doctor and Specialist accounts</div>
+      </div>
+      <div class="grid-2" style="gap:1rem;">
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          <input type="password" name="password" class="form-control" placeholder="••••••••••••" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Confirm Password</label>
+          <input type="password" name="confirm_password" class="form-control" placeholder="••••••••••••" required />
+        </div>
+      </div>
+      <!-- Password strength -->
+      <div style="margin-bottom:1.25rem;">
+        <div style="font-size:0.75rem;color:var(--gray);margin-bottom:0.4rem;">Password Strength</div>
+        <div style="height:4px;background:var(--navy-mid);border-radius:999px;overflow:hidden;">
+          <div style="width:65%;height:100%;background:linear-gradient(90deg,var(--warning),var(--success));border-radius:999px;"></div>
+        </div>
+      </div>
+      <div class="form-group" style="display:flex;align-items:flex-start;gap:0.5rem;">
+        <input type="checkbox" id="terms" style="width:16px;height:16px;margin-top:2px;accent-color:var(--cyan);" required />
+        <label for="terms" style="font-size:0.82rem;color:var(--gray);">I agree to the <a href="#" style="color:var(--cyan);">Terms of Service</a> and <a href="#" style="color:var(--cyan);">Privacy Policy</a>. I understand that all medical data is encrypted and access is strictly role-based.</label>
+      </div>
+      <button type="submit" class="btn btn-primary w-full" style="justify-content:center;padding:0.85rem;">
+        <i class="fa-solid fa-user-plus"></i> Create Secure Account
+      </button>
+    </form>
+
+    <div style="text-align:center;margin-top:1.5rem;font-size:0.875rem;color:var(--gray);">
+      Already have an account? <a href="{{ url_for('login') }}" style="color:var(--cyan);">Sign In</a>
+    </div>
+    <div style="text-align:center;margin-top:1rem;">
+      <div class="security-chip" style="display:inline-flex;"><i class="fa-solid fa-key"></i> Keypair generated on registration</div>
+    </div>
+  </div>
+</div>
+{% endblock %}

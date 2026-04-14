@@ -1,0 +1,131 @@
+{% set role = role | default('doctor') %}
+{% set nav_items = {
+  'doctor': [
+    {'icon': 'fa-house', 'label': 'Dashboard', 'url': 'doctor_dashboard', 'section': 'main'},
+    {'icon': 'fa-paper-plane', 'label': 'Create Referral', 'url': 'create_referral', 'section': 'main'},
+    {'icon': 'fa-inbox', 'label': 'Sent Referrals', 'url': 'sent_referrals', 'section': 'main'},
+    {'icon': 'fa-comment-medical', 'label': 'Secure Chat', 'url': 'secure_chat', 'section': 'communication'},
+    {'icon': 'fa-prescription', 'label': 'Prescriptions', 'url': 'prescriptions', 'section': 'communication'},
+    {'icon': 'fa-bell', 'label': 'Notifications', 'url': 'notifications', 'section': 'communication'},
+    {'icon': 'fa-user', 'label': 'My Profile', 'url': 'profile', 'section': 'account'},
+    {'icon': 'fa-key', 'label': 'Key Management', 'url': 'key_management', 'section': 'account'},
+    {'icon': 'fa-gear', 'label': 'Settings', 'url': 'settings', 'section': 'account'},
+  ],
+  'specialist': [
+    {'icon': 'fa-house', 'label': 'Dashboard', 'url': 'specialist_dashboard', 'section': 'main'},
+    {'icon': 'fa-inbox', 'label': 'Received Referrals', 'url': 'received_referrals', 'section': 'main'},
+    {'icon': 'fa-comment-medical', 'label': 'Secure Chat', 'url': 'secure_chat', 'section': 'communication'},
+    {'icon': 'fa-bell', 'label': 'Notifications', 'url': 'notifications', 'section': 'communication'},
+    {'icon': 'fa-user', 'label': 'My Profile', 'url': 'profile', 'section': 'account'},
+    {'icon': 'fa-key', 'label': 'Key Management', 'url': 'key_management', 'section': 'account'},
+    {'icon': 'fa-gear', 'label': 'Settings', 'url': 'settings', 'section': 'account'},
+  ],
+  'patient': [
+    {'icon': 'fa-house', 'label': 'Dashboard', 'url': 'patient_dashboard', 'section': 'main'},
+    {'icon': 'fa-file-medical', 'label': 'My Referrals', 'url': 'received_referrals', 'section': 'main'},
+    {'icon': 'fa-prescription-bottle-medical', 'label': 'Prescriptions', 'url': 'prescriptions', 'section': 'main'},
+    {'icon': 'fa-comment-medical', 'label': 'Secure Chat', 'url': 'secure_chat', 'section': 'communication'},
+    {'icon': 'fa-bell', 'label': 'Notifications', 'url': 'notifications', 'section': 'communication'},
+    {'icon': 'fa-user', 'label': 'My Profile', 'url': 'profile', 'section': 'account'},
+    {'icon': 'fa-gear', 'label': 'Settings', 'url': 'settings', 'section': 'account'},
+  ],
+  'admin': [
+    {'icon': 'fa-house', 'label': 'Dashboard', 'url': 'admin_dashboard', 'section': 'main'},
+    {'icon': 'fa-users', 'label': 'User Management', 'url': 'admin_dashboard', 'section': 'main'},
+    {'icon': 'fa-scroll', 'label': 'Audit Logs', 'url': 'audit_logs', 'section': 'security'},
+    {'icon': 'fa-key', 'label': 'Key Rotation', 'url': 'key_management', 'section': 'security'},
+    {'icon': 'fa-shield-halved', 'label': 'Platform Health', 'url': 'admin_dashboard', 'section': 'security'},
+    {'icon': 'fa-bell', 'label': 'Notifications', 'url': 'notifications', 'section': 'account'},
+    {'icon': 'fa-gear', 'label': 'Settings', 'url': 'settings', 'section': 'account'},
+  ]
+} %}
+
+{% set role_colors = {'doctor': 'blue', 'specialist': 'teal', 'patient': 'cyan', 'admin': 'red'} %}
+{% set role_icons  = {'doctor': '👨‍⚕️', 'specialist': '🩺', 'patient': '🧑', 'admin': '🛡️'} %}
+{% set role_name   = {'doctor': 'Dr. Sarah Khan', 'specialist': 'Dr. Ahmed Rahman', 'patient': 'John Doe', 'admin': 'Admin User'} %}
+
+<aside class="sidebar" id="sidebar">
+  <!-- Logo -->
+  <div class="sidebar-logo">
+    <div class="logo-icon">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+        <path d="M12 2L3 7v5c0 5.25 3.75 10.15 9 11.25C17.25 22.15 21 17.25 21 12V7L12 2z" fill="rgba(255,255,255,0.15)" stroke="white" stroke-width="1.5"/>
+        <path d="M12 7v10M7 12h10" stroke="white" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <div>
+      <div class="logo-text">MedLife</div>
+      <div class="logo-tagline">Secure Referral System</div>
+    </div>
+  </div>
+
+  <!-- Role badge -->
+  <div style="padding: 0.75rem 1rem;">
+    <div class="badge badge-{{ role_colors[role] }}" style="width:100%;justify-content:center;padding:0.4rem 1rem;">
+      <i class="fa-solid fa-circle-dot" style="font-size:0.55rem;"></i>
+      {{ role | capitalize }} Portal
+    </div>
+  </div>
+
+  <!-- Main Nav -->
+  <div class="sidebar-section">
+    <div class="sidebar-section-label">Main</div>
+    {% for item in nav_items[role] if item.section == 'main' %}
+    <a href="{{ url_for(item.url) }}" class="nav-item {% if request.endpoint == item.url %}active{% endif %}">
+      <span class="nav-icon"><i class="fa-solid {{ item.icon }}"></i></span>
+      {{ item.label }}
+      {% if item.label == 'Notifications' %}<span class="nav-badge badge badge-red" style="font-size:0.65rem;padding:0.15rem 0.45rem;">3</span>{% endif %}
+    </a>
+    {% endfor %}
+  </div>
+
+  {% if nav_items[role] | selectattr('section','equalto','communication') | list | length > 0 %}
+  <div class="sidebar-section">
+    <div class="sidebar-section-label">Communication</div>
+    {% for item in nav_items[role] if item.section == 'communication' %}
+    <a href="{{ url_for(item.url) }}" class="nav-item {% if request.endpoint == item.url %}active{% endif %}">
+      <span class="nav-icon"><i class="fa-solid {{ item.icon }}"></i></span>
+      {{ item.label }}
+      {% if item.label == 'Notifications' %}<span class="nav-badge badge badge-red" style="font-size:0.65rem;padding:0.15rem 0.45rem;">3</span>{% endif %}
+    </a>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {% if nav_items[role] | selectattr('section','equalto','security') | list | length > 0 %}
+  <div class="sidebar-section">
+    <div class="sidebar-section-label">Security</div>
+    {% for item in nav_items[role] if item.section == 'security' %}
+    <a href="{{ url_for(item.url) }}" class="nav-item {% if request.endpoint == item.url %}active{% endif %}">
+      <span class="nav-icon"><i class="fa-solid {{ item.icon }}"></i></span>
+      {{ item.label }}
+    </a>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <div class="sidebar-section">
+    <div class="sidebar-section-label">Account</div>
+    {% for item in nav_items[role] if item.section == 'account' %}
+    <a href="{{ url_for(item.url) }}" class="nav-item {% if request.endpoint == item.url %}active{% endif %}">
+      <span class="nav-icon"><i class="fa-solid {{ item.icon }}"></i></span>
+      {{ item.label }}
+    </a>
+    {% endfor %}
+  </div>
+
+  <!-- Footer -->
+  <div class="sidebar-footer">
+    <div class="flex items-center gap-2" style="margin-bottom:0.75rem;">
+      <div class="user-avatar-sm">{{ role_name[role][0] }}</div>
+      <div>
+        <div style="font-size:0.8rem;font-weight:600;color:var(--white);">{{ role_name[role] }}</div>
+        <div style="font-size:0.7rem;color:var(--gray);">{{ role | capitalize }}</div>
+      </div>
+    </div>
+    <a href="{{ url_for('logout') }}" class="nav-item" style="margin-bottom:0;color:var(--danger);">
+      <span class="nav-icon"><i class="fa-solid fa-right-from-bracket"></i></span>
+      Sign Out
+    </a>
+  </div>
+</aside>

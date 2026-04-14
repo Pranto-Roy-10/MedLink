@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+{% block page_class %}page-feature{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}" />{% endblock %}
+{% block body %}
+{% set role = role | default('doctor') %}
+{% include 'partials/sidebar.html' %}
+<div class="app-main">
+  {% include 'partials/network-background.html' %}
+  {% include 'partials/app_navbar.html' %}
+  <main class="app-content">
+    <div class="page-header">
+      <div><div class="page-title">Settings</div><div class="page-subtitle">Platform preferences and account configuration</div></div>
+      <button class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> Save All Changes</button>
+    </div>
+
+    <div class="grid-2" style="align-items:start;">
+      <!-- Left -->
+      <div>
+        <!-- Notification prefs -->
+        <div class="card" style="margin-bottom:1.5rem;">
+          <div style="font-size:0.9rem;font-weight:600;color:var(--white);margin-bottom:1.25rem;"><i class="fa-solid fa-bell" style="color:var(--cyan);margin-right:0.4rem;"></i>Notification Preferences</div>
+          {% for pref in [
+            ('New Referrals Received','Email + In-App',True),
+            ('Referral Status Updates','In-App Only',True),
+            ('Prescription Deliveries','Email + In-App',True),
+            ('Security Alerts','Email + SMS + In-App',True),
+            ('Key Expiry Warnings','Email',True),
+            ('System Announcements','In-App Only',False),
+          ] %}
+          <div class="integrity-item" {% if loop.last %}style="border:none;"{% endif %}>
+            <div style="flex:1;">
+              <div style="font-size:0.875rem;color:var(--white);">{{ pref[0] }}</div>
+              <div style="font-size:0.75rem;color:var(--gray);">{{ pref[1] }}</div>
+            </div>
+            <label style="position:relative;display:inline-block;width:44px;height:24px;cursor:pointer;">
+              <input type="checkbox" {% if pref[2] %}checked{% endif %} style="display:none;" />
+              <div style="position:absolute;inset:0;border-radius:999px;background:{% if pref[2] %}var(--teal){% else %}var(--navy-mid){% endif %};transition:var(--transition);"></div>
+              <div style="position:absolute;top:3px;left:{% if pref[2] %}22px{% else %}3px{% endif %};width:18px;height:18px;border-radius:50%;background:#fff;transition:var(--transition);"></div>
+            </label>
+          </div>
+          {% endfor %}
+        </div>
+
+        <!-- Privacy -->
+        <div class="card">
+          <div style="font-size:0.9rem;font-weight:600;color:var(--white);margin-bottom:1.25rem;"><i class="fa-solid fa-eye-slash" style="color:var(--teal);margin-right:0.4rem;"></i>Privacy Settings</div>
+          <div class="form-group">
+            <label class="form-label">Profile Visibility</label>
+            <select class="form-control"><option>Medical Staff Only</option><option>Patients + Staff</option><option>Admins Only</option></select>
+          </div>
+          <div class="form-group" style="margin:0;">
+            <label class="form-label">Data Retention</label>
+            <select class="form-control"><option>7 Years (Medical Standard)</option><option>5 Years</option><option>3 Years</option></select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right -->
+      <div>
+        <!-- Security settings -->
+        <div class="card" style="margin-bottom:1.5rem;">
+          <div style="font-size:0.9rem;font-weight:600;color:var(--white);margin-bottom:1.25rem;"><i class="fa-solid fa-shield-halved" style="color:var(--teal);margin-right:0.4rem;"></i>Security Preferences</div>
+          <div class="form-group">
+            <label class="form-label">Session Timeout</label>
+            <select class="form-control"><option>15 minutes</option><option selected>30 minutes</option><option>1 hour</option><option>4 hours</option></select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Key Auto-Rotation</label>
+            <select class="form-control"><option>Every 3 months</option><option selected>Every 6 months</option><option>Every year</option></select>
+          </div>
+          <div class="integrity-item">
+            <div class="integrity-label"><i class="fa-solid fa-mobile-screen-button"></i> Require 2FA on every login</div>
+            <label style="position:relative;display:inline-block;width:44px;height:24px;cursor:pointer;">
+              <input type="checkbox" checked style="display:none;" />
+              <div style="position:absolute;inset:0;border-radius:999px;background:var(--teal);"></div>
+              <div style="position:absolute;top:3px;left:22px;width:18px;height:18px;border-radius:50%;background:#fff;"></div>
+            </label>
+          </div>
+          <div class="integrity-item">
+            <div class="integrity-label"><i class="fa-solid fa-envelope"></i> Login email alerts</div>
+            <label style="position:relative;display:inline-block;width:44px;height:24px;cursor:pointer;">
+              <input type="checkbox" checked style="display:none;" />
+              <div style="position:absolute;inset:0;border-radius:999px;background:var(--teal);"></div>
+              <div style="position:absolute;top:3px;left:22px;width:18px;height:18px;border-radius:50%;background:#fff;"></div>
+            </label>
+          </div>
+          <div class="integrity-item" style="border:none;">
+            <div class="integrity-label"><i class="fa-solid fa-shield-virus"></i> Tamper detection alerts</div>
+            <label style="position:relative;display:inline-block;width:44px;height:24px;cursor:pointer;">
+              <input type="checkbox" checked style="display:none;" />
+              <div style="position:absolute;inset:0;border-radius:999px;background:var(--teal);"></div>
+              <div style="position:absolute;top:3px;left:22px;width:18px;height:18px;border-radius:50%;background:#fff;"></div>
+            </label>
+          </div>
+        </div>
+
+        <!-- Appearance -->
+        <div class="card">
+          <div style="font-size:0.9rem;font-weight:600;color:var(--white);margin-bottom:1.25rem;"><i class="fa-solid fa-palette" style="color:var(--med-blue);margin-right:0.4rem;"></i>Appearance</div>
+          <div class="form-group">
+            <label class="form-label">Theme</label>
+            <div style="display:flex;gap:0.75rem;">
+              <label style="flex:1;display:flex;align-items:center;gap:0.5rem;background:var(--navy);border:2px solid var(--cyan);border-radius:var(--radius-sm);padding:0.65rem;cursor:pointer;">
+                <input type="radio" name="theme" checked style="accent-color:var(--cyan);" /><span style="font-size:0.85rem;">Dark (Default)</span>
+              </label>
+              <label style="flex:1;display:flex;align-items:center;gap:0.5rem;background:var(--navy);border:1px solid var(--border);border-radius:var(--radius-sm);padding:0.65rem;cursor:pointer;">
+                <input type="radio" name="theme" style="accent-color:var(--cyan);" /><span style="font-size:0.85rem;">System</span>
+              </label>
+            </div>
+          </div>
+          <div class="form-group" style="margin:0;">
+            <label class="form-label">Language</label>
+            <select class="form-control"><option>English (Default)</option><option>Bengali</option><option>Arabic</option></select>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+{% endblock %}

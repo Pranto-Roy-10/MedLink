@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% block page_class %}page-feature{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}" />{% endblock %}
+{% block body %}
+{% set role = role | default('doctor') %}
+{% include 'partials/sidebar.html' %}
+<div class="app-main">  {% include 'partials/network-background.html' %}  {% include 'partials/app_navbar.html' %}
+  <main class="app-content">
+    <div class="page-header">
+      <div>
+        <div class="page-title">My Profile</div>
+        <div class="page-subtitle">Manage your account information and security settings</div>
+      </div>
+      <button class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> Save Changes</button>
+    </div>
+
+    <div class="grid-2" style="align-items:start;">
+      <!-- Left -->
+      <div>
+        <!-- Profile Card -->
+        <div class="profile-card" style="margin-bottom:1.5rem;">
+          <div class="profile-cover"></div>
+          <div class="profile-avatar-wrap">
+            <div class="profile-avatar-lg">👩‍⚕️</div>
+          </div>
+          <div class="profile-info">
+            <div class="profile-name">Dr. Sarah Khan</div>
+            <div class="profile-role">General Physician · MedLife Platform</div>
+            <div class="profile-stats">
+              <div><div class="profile-stat-num">24</div><div class="profile-stat-label">Referrals Sent</div></div>
+              <div><div class="profile-stat-num">11</div><div class="profile-stat-label">Prescriptions</div></div>
+              <div><div class="profile-stat-num">847</div><div class="profile-stat-label">Signatures</div></div>
+            </div>
+            <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
+              <div class="badge badge-blue">Doctor</div>
+              <div class="badge badge-green"><i class="fa-solid fa-circle-check"></i> Verified</div>
+              <div class="badge badge-teal"><i class="fa-solid fa-mobile-screen-button"></i> 2FA On</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Edit Form -->
+        <div class="card">
+          <div style="font-size:0.9rem;font-weight:600;color:var(--white);margin-bottom:1.25rem;"><i class="fa-solid fa-pen" style="color:var(--cyan);margin-right:0.4rem;"></i>Edit Information</div>
+          <div class="grid-2" style="gap:1rem;">
+            <div class="form-group"><label class="form-label">First Name</label><input class="form-control" value="Sarah" /></div>
+            <div class="form-group"><label class="form-label">Last Name</label><input class="form-control" value="Khan" /></div>
+          </div>
+          <div class="form-group"><label class="form-label">Email</label><input class="form-control" value="sarah.khan@cityhospital.com" /></div>
+          <div class="form-group"><label class="form-label">Specialization</label><input class="form-control" value="General Physician" /></div>
+          <div class="form-group"><label class="form-label">Medical License No.</label><input class="form-control" value="ML-2019-00847" /></div>
+          <div class="form-group"><label class="form-label">Institution</label><input class="form-control" value="City Hospital, Dhaka" /></div>
+          <div class="form-group" style="margin:0;"><label class="form-label">Bio</label><textarea class="form-control" rows="3">General physician with 8 years of clinical experience. Specializing in preventive cardiology and chronic disease management.</textarea></div>
+        </div>
+      </div>
+
+      <!-- Right -->
+      <div>
+        <!-- Security settings -->
+        <div class="card" style="margin-bottom:1.5rem;">
+          <div style="font-size:0.9rem;font-weight:600;color:var(--white);margin-bottom:1.25rem;"><i class="fa-solid fa-shield-halved" style="color:var(--teal);margin-right:0.4rem;"></i>Security Settings</div>
+          <div class="integrity-item">
+            <div class="integrity-label"><i class="fa-solid fa-mobile-screen-button"></i> Two-Factor Authentication</div>
+            <div style="display:flex;align-items:center;gap:0.5rem;">
+              <div class="badge badge-green">Enabled</div>
+              <button class="btn btn-outline btn-sm">Manage</button>
+            </div>
+          </div>
+          <div class="integrity-item">
+            <div class="integrity-label"><i class="fa-solid fa-key"></i> Active Keys</div>
+            <div style="display:flex;align-items:center;gap:0.5rem;">
+              <div class="badge badge-blue">2 Active</div>
+              <a href="{{ url_for('key_management') }}" class="btn btn-outline btn-sm">View</a>
+            </div>
+          </div>
+          <div class="integrity-item">
+            <div class="integrity-label"><i class="fa-solid fa-lock-open"></i> Password</div>
+            <button class="btn btn-outline btn-sm">Change Password</button>
+          </div>
+          <div class="integrity-item" style="border:none;">
+            <div class="integrity-label"><i class="fa-solid fa-scroll"></i> Session Logs</div>
+            <a href="{{ url_for('audit_logs') }}" class="btn btn-outline btn-sm">View Logs</a>
+          </div>
+        </div>
+
+        <!-- Active Sessions -->
+        <div class="card" style="margin-bottom:1.5rem;">
+          <div style="font-size:0.9rem;font-weight:600;color:var(--white);margin-bottom:1.25rem;"><i class="fa-solid fa-desktop" style="color:var(--cyan);margin-right:0.4rem;"></i>Active Sessions</div>
+          {% for s in [
+            ('fa-laptop','Windows — Chrome 122','192.168.1.42','Dhaka, BD',True),
+            ('fa-mobile-screen-button','iPhone — Safari','192.168.1.55','Dhaka, BD',False),
+          ] %}
+          <div class="session-card">
+            <div style="width:40px;height:40px;background:rgba(30,136,229,0.12);border-radius:8px;display:grid;place-items:center;color:var(--med-blue);font-size:1rem;flex-shrink:0;"><i class="fa-solid {{ s[0] }}"></i></div>
+            <div style="flex:1;">
+              <div class="session-device">{{ s[1] }}</div>
+              <div class="session-meta">{{ s[2] }} · {{ s[3] }}</div>
+              {% if s[4] %}<div class="session-current"><i class="fa-solid fa-circle" style="font-size:0.5rem;"></i> Current Session</div>{% endif %}
+            </div>
+            {% if not s[4] %}<button class="btn btn-danger btn-sm">Revoke</button>{% endif %}
+          </div>
+          {% endfor %}
+        </div>
+
+        <!-- Danger Zone -->
+        <div class="card" style="border-color:rgba(239,68,68,0.25);">
+          <div style="font-size:0.9rem;font-weight:600;color:var(--danger);margin-bottom:1rem;"><i class="fa-solid fa-triangle-exclamation" style="margin-right:0.4rem;"></i>Danger Zone</div>
+          <div style="font-size:0.85rem;color:var(--gray);margin-bottom:1rem;">Deactivating your account will revoke all keys, terminate all sessions, and remove your access. This action cannot be undone.</div>
+          <button class="btn btn-danger btn-sm"><i class="fa-solid fa-user-slash"></i> Deactivate Account</button>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+{% endblock %}

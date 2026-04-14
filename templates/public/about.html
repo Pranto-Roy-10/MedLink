@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% block page_class %}page-info{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/landing.css') }}" />{% endblock %}
+{% block title %}About — MedLife{% endblock %}
+{% block body %}
+{% include 'partials/navbar.html' %}
+
+<!-- Page Hero -->
+<section style="padding:10rem 0 6rem;background:radial-gradient(ellipse 70% 50% at 50% 0%,rgba(30,136,229,0.05),transparent),var(--navy);position:relative;overflow:hidden;">
+  {% include 'partials/network-background.html' %}
+  <div class="container" style="text-align:center;position:relative;z-index:1;">
+    <div class="section-label" style="justify-content:center;"><i class="fa-solid fa-circle-info"></i> About MedLife</div>
+    <h1 style="margin:1rem 0;">Built for <span class="text-gradient">Secure Healthcare</span></h1>
+    <p style="max-width:600px;margin:0 auto;font-size:1.05rem;">MedLife is a final-year university lab project demonstrating a cryptographically secure medical referral system — combining modern web principles with applied cryptography.</p>
+  </div>
+</section>
+
+<!-- Mission -->
+<section class="section" style="background:var(--navy);">
+  <div class="container">
+    <div class="why-grid">
+      <div class="reveal">
+        <div class="section-label"><i class="fa-solid fa-rocket"></i> Our Mission</div>
+        <h2>Reimagining Medical<br><span class="text-gradient">Data Security</span></h2>
+        <p style="margin:1rem 0 1.5rem;">Traditional healthcare referral systems transmit sensitive patient data through insecure channels — emails, fax, and unencrypted portals. MedLife is our answer to this systemic problem.</p>
+        <p>By applying proven cryptographic principles — symmetric encryption, public key infrastructure, digital signatures, and message authentication codes — we demonstrate that secure healthcare communication is not only possible but practical.</p>
+      </div>
+      <div class="reveal" style="animation-delay:0.2s;">
+        <div class="grid-2" style="gap:1rem;">
+          {% for m in [
+            ('🔐','Cryptographic Security','Applied PKI, signatures, and HMAC for real data protection'),
+            ('🏥','Healthcare Focus','Designed specifically for medical referral workflows'),
+            ('👥','Role-Based Access','Strict RBAC ensuring data privacy per user type'),
+            ('📋','Audit Trail','Complete immutable logging of every platform action'),
+          ] %}
+          <div class="card" style="text-align:center;">
+            <div style="font-size:2rem;margin-bottom:0.75rem;">{{ m[0] }}</div>
+            <div style="font-size:0.9rem;font-weight:600;color:var(--white);margin-bottom:0.35rem;">{{ m[1] }}</div>
+            <div style="font-size:0.8rem;color:var(--gray);">{{ m[2] }}</div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Team -->
+<section class="section" style="background:var(--navy);border-top:1px solid var(--border);">
+  <div class="container">
+    <div class="text-center reveal" style="max-width:560px;margin:0 auto 3rem;">
+      <div class="section-label"><i class="fa-solid fa-users"></i> The Team</div>
+      <h2>Built with <span class="text-gradient">Academic Excellence</span></h2>
+    </div>
+    <div class="grid-3">
+      {% for m in [
+        ('SK','Dr. Sarah Khan','Lead Developer','Full-stack development and cryptography implementation','fa-code','var(--med-blue)'),
+        ('AR','Ahmed Rahman','Security Architect','PKI design, key management, and audit system','fa-shield-halved','var(--teal)'),
+        ('AI','Ayesha Islam','UI/UX Engineer','Interface design, user experience, and frontend implementation','fa-palette','var(--cyan)'),
+      ] %}
+      <div class="card reveal" style="text-align:center;">
+        <div style="width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,var(--med-blue),var(--cyan));display:grid;place-items:center;font-size:1.3rem;font-weight:700;color:#fff;margin:0 auto 1rem;">{{ m[0] }}</div>
+        <div style="font-size:1rem;font-weight:700;color:var(--white);margin-bottom:0.25rem;">{{ m[1] }}</div>
+        <div class="badge badge-blue" style="margin-bottom:0.75rem;">{{ m[2] }}</div>
+        <p style="font-size:0.85rem;">{{ m[3] }}</p>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<!-- Tech Stack -->
+<section class="section" style="background:var(--navy);">
+  <div class="container">
+    <div class="text-center reveal" style="max-width:560px;margin:0 auto 3rem;">
+      <div class="section-label"><i class="fa-solid fa-microchip"></i> Technology</div>
+      <h2>Built on a <span class="text-gradient">Solid Foundation</span></h2>
+    </div>
+    <div class="grid-4">
+      {% for t in [
+        ('fa-python','Python + Flask','Backend framework and routing'),
+        ('fa-html5','Jinja2 Templates','Server-side template rendering'),
+        ('fa-lock','Cryptography Lib','AES, RSA, ECC, HMAC implementations'),
+        ('fa-database','SQLite / SQLAlchemy','Data persistence layer'),
+        ('fa-code','Vanilla JS','Frontend animations and interactions'),
+        ('fa-paint-brush','Custom CSS','Responsive design system'),
+        ('fa-shield','TOTP / 2FA','Time-based one-time passwords'),
+        ('fa-scroll','Audit Framework','Immutable logging engine'),
+      ] %}
+      <div class="card reveal" style="text-align:center;padding:1.5rem 1rem;">
+        <i class="fa-solid {{ t[0] }}" style="font-size:1.8rem;color:var(--cyan);margin-bottom:0.75rem;"></i>
+        <div style="font-size:0.85rem;font-weight:600;color:var(--white);margin-bottom:0.25rem;">{{ t[1] }}</div>
+        <div style="font-size:0.75rem;color:var(--gray);">{{ t[2] }}</div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+{% include 'partials/footer.html' %}
+{% endblock %}

@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% block page_class %}page-feature{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}" />{% endblock %}
+{% block body %}
+{% set role = role | default('doctor') %}
+{% include 'partials/sidebar.html' %}
+<div class="app-main">
+  {% include 'partials/network-background.html' %}
+  {% include 'partials/app_navbar.html' %}
+  <main class="app-content">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Secure Chat</div>
+        <div class="page-subtitle">End-to-end encrypted messaging — All messages are cryptographically protected</div>
+      </div>
+      <div class="badge badge-teal"><i class="fa-solid fa-lock"></i> E2E Encrypted</div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:300px 1fr;gap:1.5rem;height:calc(100vh - 200px);min-height:500px;">
+      <!-- Contact list -->
+      <div class="card" style="padding:0;overflow:hidden;display:flex;flex-direction:column;">
+        <div style="padding:1rem;border-bottom:1px solid var(--border);">
+          <div style="position:relative;">
+            <i class="fa-solid fa-magnifying-glass" style="position:absolute;left:0.75rem;top:50%;transform:translateY(-50%);color:var(--gray);font-size:0.8rem;"></i>
+            <input type="text" class="form-control" placeholder="Search conversations..." style="padding-left:2.2rem;font-size:0.82rem;" />
+          </div>
+        </div>
+        <div style="overflow-y:auto;flex:1;">
+          {% for c in [
+            {'name':'Dr. Ahmed Rahman','role':'Cardiologist','msg':'Signature verified. Schedule...','time':'10:31','unread':2,'online':True},
+            {'name':'John Doe','role':'Patient','msg':'Thank you, Doctor.','time':'09:45','unread':0,'online':True},
+            {'name':'Dr. Priya Sen','role':'Orthopedist','msg':'Please send the MRI report','time':'Yesterday','unread':1,'online':False},
+            {'name':'Ayesha Islam','role':'Patient','msg':'Prescription received','time':'Mon','unread':0,'online':False},
+          ] %}
+          <div class="notif-item" style="padding:0.85rem 1rem;cursor:pointer;{% if loop.first %}background:rgba(30,136,229,0.08);border-left:3px solid var(--med-blue);{% endif %}">
+            <div style="position:relative;">
+              <div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,var(--med-blue),var(--cyan));display:grid;place-items:center;font-size:0.9rem;font-weight:700;color:#fff;">{{ c.name[0] }}</div>
+              {% if c.online %}<div style="position:absolute;bottom:1px;right:1px;width:10px;height:10px;background:var(--success);border-radius:50%;border:2px solid var(--navy-light);"></div>{% endif %}
+            </div>
+            <div style="flex:1;min-width:0;">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.2rem;">
+                <div style="font-size:0.85rem;font-weight:600;color:var(--white);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:140px;">{{ c.name }}</div>
+                <div style="font-size:0.7rem;color:var(--gray);">{{ c.time }}</div>
+              </div>
+              <div style="font-size:0.75rem;color:var(--gray);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ c.msg }}</div>
+            </div>
+            {% if c.unread > 0 %}<div class="badge badge-blue" style="font-size:0.65rem;padding:0.15rem 0.5rem;flex-shrink:0;">{{ c.unread }}</div>{% endif %}
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- Chat Area -->
+      <div class="card" style="padding:0;overflow:hidden;display:flex;flex-direction:column;">
+        <!-- Chat header -->
+        <div style="padding:1rem 1.25rem;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:0.75rem;background:var(--navy-mid);">
+          <div style="position:relative;">
+            <div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,var(--teal),var(--cyan));display:grid;place-items:center;font-size:0.9rem;font-weight:700;color:#fff;">A</div>
+            <div style="position:absolute;bottom:1px;right:1px;width:10px;height:10px;background:var(--success);border-radius:50%;border:2px solid var(--navy-mid);"></div>
+          </div>
+          <div>
+            <div style="font-size:0.9rem;font-weight:600;color:var(--white);">Dr. Ahmed Rahman</div>
+            <div style="font-size:0.72rem;color:var(--success);"><i class="fa-solid fa-circle" style="font-size:0.45rem;"></i> Online · Cardiologist · Dhaka Medical Centre</div>
+          </div>
+          <div class="badge badge-teal" style="margin-left:auto;"><i class="fa-solid fa-lock"></i> End-to-End Encrypted</div>
+          <div class="badge badge-blue"><i class="fa-solid fa-signature"></i> Sig. Active</div>
+        </div>
+
+        <!-- Messages -->
+        <div class="chat-wrap" id="chat-messages" style="flex:1;max-height:none;">
+          <div style="text-align:center;font-size:0.75rem;color:var(--gray);padding:0.5rem 0;"><i class="fa-solid fa-lock" style="color:var(--teal);"></i> All messages in this conversation are end-to-end encrypted</div>
+
+          <div class="chat-bubble">
+            <div class="bubble-avatar">AR</div>
+            <div class="bubble-content">
+              <div class="bubble-text">Good morning Dr. Khan. I've received the referral for John Doe. Could you share his recent ECG results?</div>
+              <div class="bubble-meta">10:15 AM <span class="bubble-encrypted"><i class="fa-solid fa-lock"></i> Encrypted</span></div>
+            </div>
+          </div>
+          <div class="chat-bubble out">
+            <div class="bubble-avatar">SK</div>
+            <div class="bubble-content">
+              <div class="bubble-text">Good morning Dr. Rahman. Sending over the ECG and blood pressure logs now. Files are signed and MAC verified.</div>
+              <div class="bubble-meta">10:18 AM <span class="bubble-encrypted"><i class="fa-solid fa-lock"></i> Encrypted</span></div>
+            </div>
+          </div>
+          <div class="chat-bubble">
+            <div class="bubble-avatar">AR</div>
+            <div class="bubble-content">
+              <div class="bubble-text">✅ Signature verified. HMAC valid. The ECG shows sinus bradycardia. I'll schedule John for next Thursday. Please inform the patient.</div>
+              <div class="bubble-meta">10:31 AM <span class="bubble-encrypted"><i class="fa-solid fa-lock"></i> Encrypted</span></div>
+            </div>
+          </div>
+          <div class="chat-bubble out">
+            <div class="bubble-avatar">SK</div>
+            <div class="bubble-content">
+              <div class="bubble-text">Noted. I'll let John know. Thanks for the quick review. Should we include additional monitoring notes in the follow-up?</div>
+              <div class="bubble-meta">10:34 AM <span class="bubble-encrypted"><i class="fa-solid fa-lock"></i> Encrypted</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Input -->
+        <form id="chat-form" style="padding:1rem;border-top:1px solid var(--border);display:flex;gap:0.75rem;align-items:center;background:var(--navy-light);">
+          <button type="button" class="btn btn-outline btn-sm" style="padding:0.5rem 0.75rem;"><i class="fa-solid fa-paperclip"></i></button>
+          <input type="text" class="form-control" placeholder="Type encrypted message... (Press Enter to send)" style="font-size:0.875rem;" />
+          <button type="submit" class="btn btn-primary"><i class="fa-solid fa-paper-plane"></i> Send</button>
+        </form>
+      </div>
+    </div>
+  </main>
+</div>
+{% endblock %}

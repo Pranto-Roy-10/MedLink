@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block page_class %}page-app{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}" />{% endblock %}
+{% block body %}
+{% set role = role | default('doctor') %}
+{% include 'partials/sidebar.html' %}
+<div class="app-main">
+  {% include 'partials/network-background.html' %}
+  {% include 'partials/app_navbar.html' %}
+  <main class="app-content">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Dashboard</div>
+        <div class="page-subtitle">Select your role to access your personalised portal</div>
+      </div>
+    </div>
+    <div class="grid-2" style="max-width:700px;margin:2rem auto;">
+      {% for r, icon, color, url, desc in [
+        ('Doctor','👨‍⚕️','var(--med-blue)','doctor_dashboard','Create referrals, issue prescriptions, and communicate securely with specialists.'),
+        ('Specialist','🩺','var(--teal)','specialist_dashboard','Receive encrypted referrals, verify signatures, and respond to referring doctors.'),
+        ('Patient','🧑','var(--cyan)','patient_dashboard','Track your referrals, view prescriptions, and receive secure notifications.'),
+        ('Admin','🛡️','var(--danger)','admin_dashboard','Manage users, monitor platform health, and review audit logs.'),
+      ] %}
+      <a href="{{ url_for(url) }}" class="card role-card" style="color:var(--white);display:block;text-align:center;">
+        <div class="role-avatar" style="background:rgba(30,136,229,0.1);">{{ icon }}</div>
+        <div class="role-name">{{ r }}</div>
+        <div class="role-desc" style="margin-bottom:0.75rem;">{{ desc }}</div>
+        <div class="badge badge-blue">Enter {{ r }} Portal →</div>
+      </a>
+      {% endfor %}
+    </div>
+  </main>
+</div>
+{% endblock %}

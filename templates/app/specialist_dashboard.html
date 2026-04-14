@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block page_class %}page-app{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}" />{% endblock %}
+{% block body %}
+{% set role = 'specialist' %}
+{% include 'partials/sidebar.html' %}
+<div class="app-main">
+  {% include 'partials/network-background.html' %}
+  {% include 'partials/app_navbar.html' %}
+  <main class="app-content">
+    <div class="page-header">
+      <div>
+        <div class="breadcrumb"><a href="{{ url_for('index') }}">Home</a><span class="breadcrumb-sep">/</span>Dashboard</div>
+        <div class="page-title">Specialist Dashboard</div>
+        <div class="page-subtitle">Dr. Ahmed Rahman — Cardiologist · Monday, 14 April 2026</div>
+      </div>
+      <div class="flex gap-2">
+        <a href="{{ url_for('received_referrals') }}" class="btn btn-primary"><i class="fa-solid fa-inbox"></i> View Referrals</a>
+        <a href="{{ url_for('secure_chat') }}" class="btn btn-outline"><i class="fa-solid fa-comment-medical"></i> Secure Chat</a>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="grid-4" style="margin-bottom:2rem;">
+      <div class="stat-card"><div class="stat-icon teal"><i class="fa-solid fa-inbox"></i></div><div><div class="stat-value">12</div><div class="stat-label">Received Referrals</div><div class="stat-change up">↑ 4 this week</div></div></div>
+      <div class="stat-card"><div class="stat-icon cyan"><i class="fa-solid fa-hourglass-half"></i></div><div><div class="stat-value">5</div><div class="stat-label">Awaiting Review</div><div class="stat-change down">1 urgent</div></div></div>
+      <div class="stat-card"><div class="stat-icon green"><i class="fa-solid fa-signature"></i></div><div><div class="stat-value">12</div><div class="stat-label">Signatures Verified</div><div class="stat-change up">↑ All valid</div></div></div>
+      <div class="stat-card"><div class="stat-icon blue"><i class="fa-solid fa-reply-all"></i></div><div><div class="stat-value">9</div><div class="stat-label">Responses Sent</div><div class="stat-change up">↑ 2 today</div></div></div>
+    </div>
+
+    <div class="grid-2">
+      <!-- Incoming Referrals -->
+      <div class="section-block">
+        <div class="section-block-header">
+          <div class="section-block-title"><i class="fa-solid fa-inbox" style="color:var(--teal);margin-right:0.5rem;"></i>Incoming Referrals</div>
+          <a href="{{ url_for('received_referrals') }}" class="btn btn-outline btn-sm">View All</a>
+        </div>
+        {% for ref in [
+          {'name':'John Doe','from':'Dr. Sarah Khan','type':'Cardiology Consult','status':'New','color':'blue','urgent':True,'date':'10:24 AM'},
+          {'name':'Karim Uddin','from':'Dr. Priya Sen','type':'Cardiac Stress Test','status':'In Review','color':'warning','urgent':False,'date':'Yesterday'},
+          {'name':'Nusrat Jahan','from':'Dr. Ali Hossain','type':'Echo Referral','status':'Responded','color':'teal','urgent':False,'date':'2 days ago'},
+        ] %}
+        <div class="referral-card">
+          <div class="ref-avatar" style="background:linear-gradient(135deg,var(--teal),var(--cyan));">{{ ref.name[0] }}</div>
+          <div style="flex:1;">
+            <div class="flex items-center gap-2 flex-wrap">
+              <div class="ref-name">{{ ref.name }}</div>
+              <div class="badge badge-{{ ref.color }}" style="font-size:0.7rem;">{{ ref.status }}</div>
+              {% if ref.urgent %}<div class="badge badge-red" style="font-size:0.68rem;"><i class="fa-solid fa-triangle-exclamation"></i> Urgent</div>{% endif %}
+            </div>
+            <div class="ref-meta">From: {{ ref.from }} · {{ ref.type }}</div>
+            <div class="ref-actions">
+              <a href="{{ url_for('referral_details', ref_id=loop.index) }}" class="btn btn-teal btn-sm">Decrypt &amp; View</a>
+              <div class="badge badge-green" style="font-size:0.68rem;"><i class="fa-solid fa-check"></i> Sig. Verified</div>
+            </div>
+          </div>
+          <div class="ref-date">{{ ref.date }}</div>
+        </div>
+        {% endfor %}
+      </div>
+
+      <div>
+        <!-- Verification Panel -->
+        <div class="section-block">
+          <div class="section-block-header">
+            <div class="section-block-title"><i class="fa-solid fa-signature" style="color:var(--cyan);margin-right:0.5rem;"></i>Signature Verification</div>
+          </div>
+          <div class="integrity-panel">
+            <div class="integrity-item"><div class="integrity-label"><i class="fa-solid fa-signature"></i> John Doe Referral</div><div class="integrity-status ok"><i class="fa-solid fa-circle-check"></i> Valid</div></div>
+            <div class="integrity-item"><div class="integrity-label"><i class="fa-solid fa-fingerprint"></i> HMAC — Karim Referral</div><div class="integrity-status ok"><i class="fa-solid fa-circle-check"></i> Passed</div></div>
+            <div class="integrity-item"><div class="integrity-label"><i class="fa-solid fa-eye-slash"></i> Tamper Detection</div><div class="integrity-status ok"><i class="fa-solid fa-circle-check"></i> Clean</div></div>
+            <div class="integrity-item" style="border:none;"><div class="integrity-label"><i class="fa-solid fa-key"></i> My Decryption Key</div><div class="integrity-status ok"><i class="fa-solid fa-circle-check"></i> Active</div></div>
+          </div>
+        </div>
+        <!-- Quick Actions -->
+        <div class="section-block">
+          <div class="section-block-title" style="margin-bottom:1rem;"><i class="fa-solid fa-bolt" style="color:var(--warning);margin-right:0.5rem;"></i>Quick Actions</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;">
+            <a href="{{ url_for('received_referrals') }}" class="card" style="text-align:center;padding:1.25rem;color:var(--white);"><i class="fa-solid fa-inbox" style="font-size:1.5rem;color:var(--teal);margin-bottom:0.5rem;"></i><div style="font-size:0.82rem;font-weight:600;">Referral Inbox</div></a>
+            <a href="{{ url_for('secure_chat') }}" class="card" style="text-align:center;padding:1.25rem;color:var(--white);"><i class="fa-solid fa-comment-medical" style="font-size:1.5rem;color:var(--cyan);margin-bottom:0.5rem;"></i><div style="font-size:0.82rem;font-weight:600;">Secure Chat</div></a>
+            <a href="{{ url_for('key_management') }}" class="card" style="text-align:center;padding:1.25rem;color:var(--white);"><i class="fa-solid fa-key" style="font-size:1.5rem;color:var(--warning);margin-bottom:0.5rem;"></i><div style="font-size:0.82rem;font-weight:600;">Key Manager</div></a>
+            <a href="{{ url_for('notifications') }}" class="card" style="text-align:center;padding:1.25rem;color:var(--white);"><i class="fa-solid fa-bell" style="font-size:1.5rem;color:var(--med-blue);margin-bottom:0.5rem;"></i><div style="font-size:0.82rem;font-weight:600;">Notifications</div></a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+{% endblock %}

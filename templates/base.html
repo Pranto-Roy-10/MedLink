@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="{% block meta_desc %}MedLife — Secure Medical Referral System. Encrypted patient referrals, role-based access, and trusted communication for modern healthcare.{% endblock %}" />
+  <title>{% block title %}MedLife — Secure Medical Referral System{% endblock %}</title>
+
+  <!-- Favicon -->
+  <link rel="icon" href="{{ url_for('static', filename='images/favicon.svg') }}" type="image/svg+xml" />
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+
+  <!-- Core CSS -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}" />
+  {% block extra_css %}{% endblock %}
+
+  <style>
+    /* Toast */
+    .toast {
+      position: fixed; bottom: 2rem; right: 2rem; z-index: 9999;
+      background: var(--navy-mid); border: 1px solid var(--border);
+      color: var(--white); padding: 1rem 1.5rem; border-radius: var(--radius-sm);
+      font-size: 0.9rem; transform: translateY(20px); opacity: 0;
+      transition: all 0.3s ease; box-shadow: var(--shadow-md); max-width: 340px;
+    }
+    .toast.show { transform: translateY(0); opacity: 1; }
+    .toast-success { border-color: rgba(34,197,94,0.4); }
+    .toast-danger  { border-color: rgba(239,68,68,0.4); }
+    .toast-info    { border-color: rgba(30,136,229,0.4); }
+
+    /* Modal */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0; z-index: 500;
+      background: rgba(0,0,0,0.65); backdrop-filter: blur(6px);
+      align-items: center; justify-content: center; padding: 1.5rem;
+    }
+    .modal-box {
+      background: var(--navy-light); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); padding: 2rem; max-width: 540px; width: 100%;
+      animation: fadeUp 0.3s ease;
+    }
+    .modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; }
+    .modal-title  { font-size: 1.1rem; font-weight: 700; color: var(--white); }
+    .modal-close  { background: none; border: none; color: var(--gray); font-size: 1.2rem; cursor: pointer; }
+    .modal-close:hover { color: var(--white); }
+    .modal-footer { margin-top: 1.5rem; display: flex; justify-content: flex-end; gap: 0.75rem; }
+  </style>
+</head>
+<body class="{% block page_class %}{% endblock %}">
+  {% block body %}{% endblock %}
+
+  <!-- Main JS -->
+  <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+  {% block extra_js %}{% endblock %}
+</body>
+</html>

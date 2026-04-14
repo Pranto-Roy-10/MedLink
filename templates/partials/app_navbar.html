@@ -1,0 +1,77 @@
+{% set role_name_map = {'doctor': 'Dr. Sarah Khan', 'specialist': 'Dr. Ahmed Rahman', 'patient': 'John Doe', 'admin': 'Admin User'} %}
+{% set current_user_name = role_name_map[role] if role in role_name_map else 'User' %}
+
+<header class="app-navbar">
+  <div class="flex items-center gap-3">
+    <button id="sidebar-toggle" style="background:none;border:none;color:var(--gray);font-size:1.1rem;cursor:pointer;">
+      <i class="fa-solid fa-bars"></i>
+    </button>
+    <div>
+      <div style="font-size:0.95rem;font-weight:600;color:var(--white);">
+        {% block app_page_label %}MedLife Dashboard{% endblock %}
+      </div>
+      <div style="font-size:0.72rem;color:var(--gray);">Secure Medical Referral System</div>
+    </div>
+  </div>
+
+  <div class="flex items-center gap-3">
+    <!-- Security status -->
+    <div class="security-chip" style="font-size:0.7rem;">
+      <i class="fa-solid fa-shield-halved"></i> Session Secured
+    </div>
+
+    <!-- Search -->
+    <div style="position:relative;">
+      <i class="fa-solid fa-magnifying-glass" style="position:absolute;left:0.75rem;top:50%;transform:translateY(-50%);color:var(--gray);font-size:0.75rem;"></i>
+      <input type="text" placeholder="Search..." style="background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:999px;padding:0.45rem 1rem 0.45rem 2.1rem;color:var(--white);font-size:0.8rem;width:200px;outline:none;" />
+    </div>
+
+    <!-- Notification Bell -->
+    <div style="position:relative;">
+      <button id="notif-btn" style="background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:50%;width:38px;height:38px;display:grid;place-items:center;color:var(--gray);font-size:0.85rem;cursor:pointer;position:relative;">
+        <i class="fa-solid fa-bell"></i>
+        <span style="position:absolute;top:7px;right:7px;width:7px;height:7px;background:var(--danger);border-radius:50%;border:2px solid var(--navy-light);"></span>
+      </button>
+      <div id="notif-dropdown" class="hidden" style="position:absolute;right:0;top:calc(100% + 0.5rem);width:310px;background:var(--navy-light);border:1px solid var(--border);border-radius:var(--radius-md);padding:1rem;box-shadow:var(--shadow-lg);z-index:200;">
+        <div style="font-size:0.85rem;font-weight:600;color:var(--white);margin-bottom:0.75rem;display:flex;justify-content:space-between;">
+          Notifications <span class="badge badge-red" style="font-size:0.62rem;">3 new</span>
+        </div>
+        <div class="notif-item">
+          <div class="notif-icon-wrap" style="background:rgba(30,136,229,0.15);color:var(--med-blue);font-size:0.85rem;"><i class="fa-solid fa-file-medical"></i></div>
+          <div>
+            <div class="notif-text">New referral received from Dr. Rahman</div>
+            <div class="notif-sub">Cardiology consult for John Doe</div>
+          </div>
+          <div class="notif-time">5m</div>
+        </div>
+        <div class="notif-item">
+          <div class="notif-icon-wrap" style="background:rgba(34,197,94,0.15);color:var(--success);font-size:0.85rem;"><i class="fa-solid fa-check-circle"></i></div>
+          <div>
+            <div class="notif-text">Prescription signed successfully</div>
+            <div class="notif-sub">Digital signature verified ✓</div>
+          </div>
+          <div class="notif-time">1h</div>
+        </div>
+        <div class="notif-item" style="border:none;">
+          <div class="notif-icon-wrap" style="background:rgba(245,158,11,0.15);color:var(--warning);font-size:0.85rem;"><i class="fa-solid fa-key"></i></div>
+          <div>
+            <div class="notif-text">Key rotation due in 7 days</div>
+            <div class="notif-sub">RSA-2048 keypair expiring soon</div>
+          </div>
+          <div class="notif-time">2h</div>
+        </div>
+        <a href="{{ url_for('notifications') }}" class="btn btn-outline btn-sm w-full" style="margin-top:0.75rem;justify-content:center;">View All Notifications</a>
+      </div>
+    </div>
+
+    <!-- User Avatar -->
+    <div style="display:flex;align-items:center;gap:0.6rem;cursor:pointer;padding:0.35rem 0.6rem;border-radius:var(--radius-sm);border:1px solid var(--border);transition:var(--transition);" onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background='transparent'">
+      <div class="user-avatar-sm">{{ current_user_name[0] }}</div>
+      <div style="display:none;">
+        <div style="font-size:0.78rem;font-weight:600;color:var(--white);">{{ current_user_name }}</div>
+        <div style="font-size:0.65rem;color:var(--gray);">{{ role | capitalize }}</div>
+      </div>
+      <i class="fa-solid fa-chevron-down" style="font-size:0.6rem;color:var(--gray);"></i>
+    </div>
+  </div>
+</header>

@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+
+{% block title %}Direct Asymmetric Encryption Demo - MedLink{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-slate-50" style="background-color: #F8FAFC;">
+    <div class="max-w-4xl mx-auto px-6 py-12">
+        <!-- Header -->
+        <div class="mb-12 text-center">
+            <h1 class="text-4xl font-bold text-slate-900 mb-3" style="font-family: 'Plus Jakarta Sans', sans-serif;">
+                🔐 Direct Asymmetric Encryption Demo
+            </h1>
+            <p class="text-lg text-slate-600">
+                100% RSA Encryption - No Symmetric Shortcuts
+            </p>
+        </div>
+
+        <!-- Info Card -->
+        <div class="bg-white rounded-2xl p-8 mb-8 shadow-lg border-2 border-cyan-200">
+            <h2 class="text-2xl font-bold text-slate-900 mb-4">How It Works</h2>
+            <ul class="space-y-3 text-slate-700">
+                <li class="flex items-start">
+                    <span class="text-cyan-600 font-bold mr-3">1.</span>
+                    <span>Select a recipient doctor or specialist</span>
+                </li>
+                <li class="flex items-start">
+                    <span class="text-cyan-600 font-bold mr-3">2.</span>
+                    <span>Enter a medical note or sensitive information</span>
+                </li>
+                <li class="flex items-start">
+                    <span class="text-cyan-600 font-bold mr-3">3.</span>
+                    <span>Click "Encrypt with RSA" button</span>
+                </li>
+                <li class="flex items-start">
+                    <span class="text-cyan-600 font-bold mr-3">4.</span>
+                    <span>See the encrypted output (pure RSA, no symmetric operations)</span>
+                </li>
+                <li class="flex items-start">
+                    <span class="text-cyan-600 font-bold mr-3">5.</span>
+                    <span>Only the recipient with their private key can decrypt</span>
+                </li>
+            </ul>
+        </div>
+
+        <!-- Form -->
+        <div class="bg-white rounded-2xl p-8 shadow-lg">
+            <form id="encryptForm" class="space-y-6">
+                <!-- Recipient Selection -->
+                <div>
+                    <label class="block text-sm font-semibold text-slate-900 mb-3">
+                        📧 Select Recipient
+                    </label>
+                    <select name="recipient_id" required class="w-full px-4 py-3 rounded-lg border border-slate-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 transition">
+                        <option value="">Choose a recipient...</option>
+                        {% for recipient in recipients %}
+                        <option value="{{ recipient.id }}">
+                            {{ recipient.get_display_name() }} ({{ recipient.role.title() }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Medical Note -->
+                <div>
+                    <label class="block text-sm font-semibold text-slate-900 mb-3">
+                        📝 Medical Note
+                    </label>
+                    <textarea name="medical_note" required rows="6" placeholder="Enter medical note or sensitive information..." class="w-full px-4 py-3 rounded-lg border border-slate-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 transition font-mono text-sm"></textarea>
+                    <p class="text-xs text-slate-600 mt-2">Example: Patient presents with persistent headaches, recommend MRI scan...</p>
+                </div>
+
+                <!-- Submit Button -->
+                <button type="submit" class="w-full bg-gradient-to-r from-cyan-500 to-teal-600 hover:from-cyan-600 hover:to-teal-700 text-white font-bold py-4 px-6 rounded-lg transition transform hover:scale-105">
+                    🔒 Encrypt with RSA (Asymmetric Only)
+                </button>
+            </form>
+        </div>
+
+        <!-- Results Section -->
+        <div id="resultsSection" class="mt-8 hidden">
+            <div class="bg-green-50 rounded-2xl p-8 shadow-lg border-2 border-green-300">
+                <h2 class="text-2xl font-bold text-green-900 mb-4">✅ Encryption Successful</h2>
+                
+                <div class="grid grid-cols-2 gap-4 mb-6">
+                    <div>
+                        <p class="text-sm text-green-700 font-semibold">Algorithm</p>
+                        <p id="algorithm" class="text-lg font-bold text-slate-900">RSA (Direct Asymmetric)</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-green-700 font-semibold">Key Size</p>
+                        <p id="keySize" class="text-lg font-bold text-slate-900">256-bit</p>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-semibold text-slate-900 mb-3">
+                        🔐 Encrypted Output (First 100 characters)
+                    </label>
+                    <div class="bg-slate-900 rounded-lg p-4 font-mono text-xs text-green-400 overflow-x-auto break-words">
+                        <span id="encryptedOutput"></span>
+                    </div>
+                </div>
+
+                <div class="mt-4 p-4 bg-white rounded-lg border border-green-300">
+                    <p id="note" class="text-sm text-slate-700"></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Go Back Button -->
+        <div class="mt-8">
+            <a href="{{ url_for('dashboard') }}" class="inline-block text-cyan-600 hover:text-cyan-700 font-semibold">
+                ← Back to Dashboard
+            </a>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('encryptForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    
+    try {
+        const response = await fetch('{{ url_for("encrypt_demo") }}', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            document.getElementById('algorithm').textContent = data.algorithm;
+            document.getElementById('keySize').textContent = data.key_size;
+            document.getElementById('encryptedOutput').textContent = data.encrypted;
+            document.getElementById('note').textContent = data.note;
+            document.getElementById('resultsSection').classList.remove('hidden');
+            
+            // Scroll to results
+            document.getElementById('resultsSection').scrollIntoView({ behavior: 'smooth' });
+        } else {
+            alert('Error: ' + data.error);
+        }
+    } catch (error) {
+        alert('Error: ' + error.message);
+    }
+});
+</script>
+{% endblock %}

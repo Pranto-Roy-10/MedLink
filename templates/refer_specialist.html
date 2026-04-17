@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+
+{% block title %}Refer to Specialist - MedLink{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-slate-50" style="background-color: #F8FAFC;">
+    <div class="max-w-4xl mx-auto px-6 py-12">
+        <!-- Header -->
+        <div class="mb-12">
+            <h1 class="text-4xl font-bold text-slate-900 mb-2" style="font-family: 'Plus Jakarta Sans', sans-serif;">
+                👨‍⚕️ Refer Patient to Specialist
+            </h1>
+            <p class="text-lg text-slate-600">
+                Create an encrypted specialist referral with full patient history
+            </p>
+        </div>
+
+        <!-- Info Card -->
+        <div class="bg-purple-50 rounded-2xl p-6 mb-8 border-2 border-purple-300">
+            <h2 class="font-semibold text-purple-900 mb-2">🔒 Referral Features</h2>
+            <ul class="text-sm text-purple-800 space-y-1">
+                <li>✓ Encrypted referral communication</li>
+                <li>✓ Full patient history and medical background included</li>
+                <li>✓ Digital signature and HMAC authentication</li>
+                <li>✓ Specialist receives notification</li>
+                <li>✓ Complete audit trail maintained</li>
+            </ul>
+        </div>
+
+        <!-- Form -->
+        <div class="bg-white rounded-2xl p-8 shadow-lg">
+            <form id="referralForm" class="space-y-6">
+                <!-- Patient Selection -->
+                <div>
+                    <label class="block text-sm font-semibold text-slate-900 mb-3">
+                        👤 Select Patient
+                    </label>
+                    <select name="patient_id" required class="w-full px-4 py-3 rounded-lg border border-slate-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 transition">
+                        <option value="">Choose a patient...</option>
+                        {% for patient in patients %}
+                        <option value="{{ patient.id }}">
+                            {{ patient.get_display_name() }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Specialist Selection -->
+                <div>
+                    <label class="block text-sm font-semibold text-slate-900 mb-3">
+                        🩺 Select Specialist
+                    </label>
+                    <select name="specialist_id" required class="w-full px-4 py-3 rounded-lg border border-slate-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 transition">
+                        <option value="">Choose a specialist...</option>
+                        {% for specialist in specialists %}
+                        <option value="{{ specialist.id }}">
+                            {{ specialist.get_display_name() }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Referral Reason -->
+                <div>
+                    <label class="block text-sm font-semibold text-slate-900 mb-3">
+                        📋 Reason for Referral
+                    </label>
+                    <input type="text" name="referral_reason" required placeholder="e.g., Suspected cardiac condition, post-surgery evaluation..." class="w-full px-4 py-3 rounded-lg border border-slate-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 transition">
+                </div>
+
+                <!-- Medical History -->
+                <div>
+                    <label class="block text-sm font-semibold text-slate-900 mb-3">
+                        📚 Medical History & Background
+                    </label>
+                    <textarea name="medical_history" required rows="6" placeholder="Provide patient's medical history, current medications, allergies, previous surgeries, relevant lab results..." class="w-full px-4 py-3 rounded-lg border border-slate-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 transition"></textarea>
+                </div>
+
+                <!-- Submit Button -->
+                <button type="submit" class="w-full bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white font-bold py-4 px-6 rounded-lg transition transform hover:scale-105">
+                    📤 Send Specialist Referral
+                </button>
+            </form>
+        </div>
+
+        <!-- Success Message -->
+        <div id="successMessage" class="mt-8 hidden">
+            <div class="bg-green-50 rounded-2xl p-8 shadow-lg border-2 border-green-300">
+                <h2 class="text-2xl font-bold text-green-900 mb-4">✅ Specialist Referral Sent Successfully</h2>
+                
+                <div class="bg-white rounded-lg p-4 mb-6 border border-green-300">
+                    <p class="text-sm text-slate-700">
+                        <strong>Referral ID:</strong> <span id="referralId" class="font-mono"></span>
+                    </p>
+                    <p class="text-sm text-slate-700 mt-2">
+                        The specialist has been notified and can review the encrypted referral details.
+                    </p>
+                </div>
+
+                <a href="{{ url_for('dashboard') }}" class="inline-block bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-lg transition">
+                    Back to Dashboard
+                </a>
+            </div>
+        </div>
+
+        <!-- Go Back Button -->
+        <div class="mt-8">
+            <a href="{{ url_for('dashboard') }}" class="inline-block text-cyan-600 hover:text-cyan-700 font-semibold">
+                ← Back to Dashboard
+            </a>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('referralForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    
+    try {
+        const response = await fetch('{{ url_for("refer_specialist") }}', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            document.getElementById('referralId').textContent = data.referral_id;
+            document.getElementById('successMessage').classList.remove('hidden');
+            document.querySelector('form').style.display = 'none';
+            
+            document.getElementById('successMessage').scrollIntoView({ behavior: 'smooth' });
+        } else {
+            alert('Error: ' + data.error);
+        }
+    } catch (error) {
+        alert('Error: ' + error.message);
+    }
+});
+</script>
+{% endblock %}

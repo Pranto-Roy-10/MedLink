@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+
+{% block title %}Create Prescription - MedLink{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-slate-50" style="background-color: #F8FAFC;">
+    <div class="max-w-4xl mx-auto px-6 py-12">
+        <!-- Header -->
+        <div class="mb-12">
+            <h1 class="text-4xl font-bold text-slate-900 mb-2" style="font-family: 'Plus Jakarta Sans', sans-serif;">
+                💊 Create Prescription
+            </h1>
+            <p class="text-lg text-slate-600">
+                Issue an encrypted prescription to a patient
+            </p>
+        </div>
+
+        <!-- Info Card -->
+        <div class="bg-blue-50 rounded-2xl p-6 mb-8 border-2 border-blue-300">
+            <h2 class="font-semibold text-blue-900 mb-2">🔒 Security Features</h2>
+            <ul class="text-sm text-blue-800 space-y-1">
+                <li>✓ Encrypted with patient's RSA public key (Direct Asymmetric)</li>
+                <li>✓ HMAC integrity verification included</li>
+                <li>✓ Securely encrypted and HMAC verified</li>
+                <li>✓ Patient downloads as secure document</li>
+            </ul>
+        </div>
+
+        <!-- Form -->
+        <div class="bg-white rounded-2xl p-8 shadow-lg">
+            <form id="prescriptionForm" class="space-y-6">
+                <!-- Patient Selection -->
+                <div>
+                    <label class="block text-sm font-semibold text-slate-900 mb-3">
+                        👤 Select Patient
+                    </label>
+                    <select name="patient_id" required class="w-full px-4 py-3 rounded-lg border border-slate-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 transition">
+                        <option value="">Choose a patient...</option>
+                        {% for patient in patients %}
+                        <option value="{{ patient.id }}">
+                            {{ patient.get_display_name() }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Referral Selection (Optional) -->
+                {% if referrals %}
+                <div>
+                    <label class="block text-sm font-semibold text-slate-900 mb-3">
+                        📋 Related Referral (Optional)
+                    </label>
+                    <select name="referral_id" class="w-full px-4 py-3 rounded-lg border border-slate-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 transition">
+                        <option value="">No referral</option>
+                        {% for referral in referrals %}
+                        <option value="{{ referral.id }}">
+                            Referral #{{ referral.id }} - {{ referral.timestamp.strftime('%Y-%m-%d') }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                {% endif %}
+
+                <!-- Medication -->
+                <div>
+                    <label class="block text-sm font-semibold text-slate-900 mb-3">
+                        💊 Medication
+                    </label>
+                    <input type="text" name="medication" required placeholder="e.g., Amoxicillin, Ibuprofen..." class="w-full px-4 py-3 rounded-lg border border-slate-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 transition">
+                </div>
+
+                <!-- Dosage -->
+                <div>
+                    <label class="block text-sm font-semibold text-slate-900 mb-3">
+                        📊 Dosage
+                    </label>
+                    <input type="text" name="dosage" required placeholder="e.g., 500mg, twice daily..." class="w-full px-4 py-3 rounded-lg border border-slate-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 transition">
+                </div>
+
+                <!-- Instructions -->
+                <div>
+                    <label class="block text-sm font-semibold text-slate-900 mb-3">
+                        📝 Instructions
+                    </label>
+                    <textarea name="instructions" required rows="4" placeholder="Detailed instructions for patient..." class="w-full px-4 py-3 rounded-lg border border-slate-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 transition"></textarea>
+                </div>
+
+                <!-- Submit Button -->
+                <button type="submit" class="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-bold py-4 px-6 rounded-lg transition transform hover:scale-105">
+                    💚 Create & Encrypt Prescription
+                </button>
+            </form>
+        </div>
+
+        <!-- Success Message -->
+        <div id="successMessage" class="mt-8 hidden">
+            <div class="bg-green-50 rounded-2xl p-8 shadow-lg border-2 border-green-300">
+                <h2 class="text-2xl font-bold text-green-900 mb-4">✅ Prescription Created Successfully</h2>
+                
+                <div class="bg-white rounded-lg p-4 mb-6 border border-green-300">
+                    <p class="text-sm text-slate-700">
+                        <strong>Document ID:</strong> <span id="docId" class="font-mono"></span>
+                    </p>
+                    <p class="text-sm text-slate-700 mt-2">
+                        The prescription has been encrypted with the patient's RSA public key and stored securely in the database.
+                    </p>
+                </div>
+
+                <a href="{{ url_for('dashboard') }}" class="inline-block bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-lg transition">
+                    Back to Dashboard
+                </a>
+            </div>
+        </div>
+
+        <!-- Go Back Button -->
+        <div class="mt-8">
+            <a href="{{ url_for('dashboard') }}" class="inline-block text-cyan-600 hover:text-cyan-700 font-semibold">
+                ← Back to Dashboard
+            </a>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('prescriptionForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    
+    try {
+        const response = await fetch('{{ url_for("create_prescription") }}', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            document.getElementById('docId').textContent = data.document_id;
+            document.getElementById('successMessage').classList.remove('hidden');
+            document.querySelector('form').style.display = 'none';
+            
+            document.getElementById('successMessage').scrollIntoView({ behavior: 'smooth' });
+        } else {
+            alert('Error: ' + data.error);
+        }
+    } catch (error) {
+        alert('Error: ' + error.message);
+    }
+});
+</script>
+{% endblock %}

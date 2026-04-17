@@ -1,0 +1,191 @@
+{% extends "base.html" %}
+
+{% block title %}Register - MedLink{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center px-4 py-12" style="background: linear-gradient(135deg, #F8FAFC 0%, #F0F9FF 100%);">
+    <div class="w-full max-w-md">
+        <!-- Registration Card -->
+        <div class="card-elevated bg-white rounded-3xl p-8 animate-fade-in-up">
+            <!-- Logo -->
+            <div class="flex items-center justify-center mb-8">
+                <div class="w-12 h-12 bg-gradient-to-br from-cyan-500 to-teal-600 rounded-lg flex items-center justify-center mr-3">
+                    <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path>
+                    </svg>
+                </div>
+                <span class="text-2xl font-bold text-slate-900" style="font-family: 'Plus Jakarta Sans', sans-serif;">MedLink</span>
+            </div>
+
+            <!-- Heading -->
+            <h1 class="text-3xl font-bold text-slate-900 text-center mb-2" style="font-family: 'Plus Jakarta Sans', sans-serif;">
+                Create Account
+            </h1>
+            <p class="text-center text-slate-600 mb-8">
+                Join MedLink and get automatic cryptographic key generation
+            </p>
+
+            <!-- Error Message -->
+            {% if error %}
+            <div class="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+                <p class="text-sm text-red-700">{{ error }}</p>
+            </div>
+            {% endif %}
+
+            <!-- Registration Form -->
+            <form method="POST" action="{{ url_for('register') }}" class="space-y-5">
+                <!-- Username -->
+                <div>
+                    <label for="username" class="block text-sm font-semibold text-slate-900 mb-2">
+                        Username (Email)
+                    </label>
+                    <input 
+                        type="email" 
+                        id="username" 
+                        name="username" 
+                        required 
+                        class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition"
+                        placeholder="your@email.com"
+                    >
+                </div>
+
+                <!-- Password -->
+                <div>
+                    <label for="password" class="block text-sm font-semibold text-slate-900 mb-2">
+                        Password
+                    </label>
+                    <input 
+                        type="password" 
+                        id="password" 
+                        name="password" 
+                        required 
+                        class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition"
+                        placeholder="••••••••"
+                    >
+                    <p class="text-xs text-slate-500 mt-2">
+                        At least 8 characters recommended
+                    </p>
+                </div>
+
+                <!-- Confirm Password -->
+                <div>
+                    <label for="confirm_password" class="block text-sm font-semibold text-slate-900 mb-2">
+                        Confirm Password
+                    </label>
+                    <input 
+                        type="password" 
+                        id="confirm_password" 
+                        name="confirm_password" 
+                        required 
+                        class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition"
+                        placeholder="••••••••"
+                    >
+                </div>
+
+                <!-- Role Selection -->
+                <div>
+                    <label for="role" class="block text-sm font-semibold text-slate-900 mb-2">
+                        User Role
+                    </label>
+                    <select 
+                        id="role" 
+                        name="role" 
+                        required 
+                        class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition"
+                    >
+                        <option value="patient">Patient</option>
+                        <option value="doctor">Doctor/Healthcare Provider</option>
+                        <option value="specialist">Specialist</option>
+                    </select>
+                </div>
+
+                <!-- Patient NID (Encrypted with Direct RSA) -->
+                <div>
+                    <label for="nid" class="block text-sm font-semibold text-slate-900 mb-2">
+                        National ID / NID (for Patients)
+                    </label>
+                    <input 
+                        type="text" 
+                        id="nid" 
+                        name="nid" 
+                        class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition"
+                        placeholder="000-000-000-000 (will be encrypted with RSA)"
+                    >
+                    <p class="text-xs text-slate-500 mt-2">
+                        🔐 This data will be encrypted using Direct RSA (Strict Asymmetric)
+                    </p>
+                </div>
+
+                <!-- Blood Group -->
+                <div>
+                    <label for="blood_group" class="block text-sm font-semibold text-slate-900 mb-2">
+                        Blood Group
+                    </label>
+                    <select 
+                        id="blood_group" 
+                        name="blood_group" 
+                        class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition"
+                    >
+                        <option value="O+">O+</option>
+                        <option value="O-">O-</option>
+                        <option value="A+">A+</option>
+                        <option value="A-">A-</option>
+                        <option value="B+">B+</option>
+                        <option value="B-">B-</option>
+                        <option value="AB+">AB+</option>
+                        <option value="AB-">AB-</option>
+                    </select>
+                </div>
+
+                <!-- Features Notice -->
+                <div class="p-4 bg-cyan-50 border border-cyan-200 rounded-lg">
+                    <p class="text-xs text-cyan-900 font-semibold mb-2">✓ Automatic Key Generation</p>
+                    <ul class="space-y-1 text-xs text-cyan-800">
+                        <li>• RSA 2048-bit keys for signing and encryption</li>
+                        <li>• ECC 256-bit curve for secure messaging</li>
+                        <li>• 2FA enabled with digital signature challenge</li>
+                        <li>• NID encrypted with direct RSA (m^e mod N)</li>
+                    </ul>
+                </div>
+
+                <!-- Register Button -->
+                <button 
+                    type="submit" 
+                    class="btn-primary w-full py-3 bg-gradient-to-r from-cyan-500 to-teal-600 text-white rounded-xl font-semibold hover:shadow-lg"
+                >
+                    Create Secure Account
+                </button>
+            </form>
+
+            <!-- Divider -->
+            <div class="my-6 relative">
+                <div class="absolute inset-0 flex items-center">
+                    <div class="w-full border-t border-slate-200"></div>
+                </div>
+                <div class="relative flex justify-center text-sm">
+                    <span class="px-2 bg-white text-slate-500">Or</span>
+                </div>
+            </div>
+
+            <!-- Login Link -->
+            <div class="text-center">
+                <p class="text-sm text-slate-600">
+                    Already have an account?
+                    <a href="{{ url_for('login') }}" class="text-cyan-600 hover:text-cyan-700 font-semibold">
+                        Sign In
+                    </a>
+                </p>
+            </div>
+
+            <!-- Security Note -->
+            <div class="mt-6 pt-6 border-t border-slate-200">
+                <p class="text-xs text-slate-600 text-center">
+                    🔒 Your cryptographic keys are generated during registration and stored securely.
+                    <br>
+                    All sensitive data (NID, passwords) are encrypted before storage.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

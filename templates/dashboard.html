@@ -1,0 +1,555 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - MedLink{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-slate-50" style="background-color: #F8FAFC;">
+    <div class="flex h-screen bg-slate-50">
+        
+        <!-- Sidebar Navigation -->
+        <div class="sidebar w-20 bg-white border-r border-slate-200 flex flex-col items-center py-8 space-y-8 fixed h-screen z-40">
+            <!-- Logo -->
+            <a href="{{ url_for('dashboard') }}" class="flex items-center justify-center w-12 h-12 rounded-lg bg-gradient-to-br from-cyan-500 to-teal-600 hover:shadow-lg transition">
+                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path>
+                </svg>
+            </a>
+
+            <!-- Nav Items -->
+            <nav class="flex flex-col space-y-6 flex-1">
+                <!-- Home -->
+                <a href="{{ url_for('dashboard') }}" class="flex items-center justify-center w-12 h-12 rounded-lg bg-cyan-100 text-cyan-600 hover:bg-cyan-200 transition" title="Home">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-3m0 0l7-4 7 4M5 9v10a1 1 0 001 1h12a1 1 0 001-1V9m-9 9l9-9"></path>
+                    </svg>
+                </a>
+
+                <!-- Chat -->
+                <a href="{{ url_for('chat_list') }}" class="flex items-center justify-center w-12 h-12 rounded-lg text-slate-600 hover:bg-slate-100 transition" title="Messages">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+                    </svg>
+                </a>
+
+                <!-- Referrals -->
+                <a href="#" class="flex items-center justify-center w-12 h-12 rounded-lg text-slate-600 hover:bg-slate-100 transition" title="Referrals">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </a>
+
+                <!-- Settings -->
+                <a href="#" class="flex items-center justify-center w-12 h-12 rounded-lg text-slate-600 hover:bg-slate-100 transition" title="Settings">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    </svg>
+                </a>
+            </nav>
+
+            <!-- Logout -->
+            <a href="{{ url_for('logout') }}" class="flex items-center justify-center w-12 h-12 rounded-lg text-slate-600 hover:bg-red-100 hover:text-red-600 transition" title="Logout">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                </svg>
+            </a>
+        </div>
+
+        <!-- Main Content -->
+        <div class="flex-1 ml-20 overflow-auto">
+            <!-- Top Header -->
+            <div class="bg-white border-b border-slate-200 sticky top-0 z-30">
+                <div class="px-8 py-6 flex justify-between items-center">
+                    <div>
+                        <h1 class="text-3xl font-bold text-slate-900" style="font-family: 'Plus Jakarta Sans', sans-serif;">
+                            Welcome back, {{ user_name }}!
+                        </h1>
+                        <p class="text-slate-600 mt-1">
+                            {{ user_role.capitalize() }} Portal
+                        </p>
+                    </div>
+                    
+                    <!-- User Profile -->
+                    <div class="flex items-center space-x-4">
+                        <div class="text-right">
+                            <p class="text-sm font-semibold text-slate-900">{{ user_name }}</p>
+                            <p class="text-xs text-slate-600">{{ user_role.capitalize() }}</p>
+                        </div>
+                        <div class="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-500 to-teal-600 flex items-center justify-center text-white font-bold">
+                            {{ user_name[0] }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Page Content -->
+            <div class="px-8 py-8">
+                <!-- Quick Stats Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <!-- Active Consultations -->
+                    <div class="card-elevated bg-white rounded-2xl p-6 animation-trigger stagger-1">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-slate-600 font-medium mb-2">Active Consultations</p>
+                                <p class="text-3xl font-bold text-slate-900" style="font-family: 'Plus Jakarta Sans', sans-serif;">
+                                    {{ stats.active_consultations }}
+                                </p>
+                            </div>
+                            <div class="w-12 h-12 rounded-lg bg-blue-100 flex items-center justify-center">
+                                <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="mt-4 text-xs text-slate-500">
+                            <span class="text-green-600 font-semibold">↑ 12%</span> from last month
+                        </div>
+                    </div>
+
+                    <!-- Pending Referrals -->
+                    <div class="card-elevated bg-white rounded-2xl p-6 animation-trigger stagger-2">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-slate-600 font-medium mb-2">Pending Referrals</p>
+                                <p class="text-3xl font-bold text-slate-900" style="font-family: 'Plus Jakarta Sans', sans-serif;">
+                                    {{ stats.pending_referrals }}
+                                </p>
+                            </div>
+                            <div class="w-12 h-12 rounded-lg bg-cyan-100 flex items-center justify-center">
+                                <svg class="w-6 h-6 text-cyan-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m0 6a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="mt-4 text-xs text-slate-500">
+                            <span class="text-orange-600 font-semibold">⏱ Needs attention</span>
+                        </div>
+                    </div>
+
+                    <!-- Verified Documents -->
+                    <div class="card-elevated bg-white rounded-2xl p-6 animation-trigger stagger-3">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-slate-600 font-medium mb-2">Verified Documents</p>
+                                <p class="text-3xl font-bold text-slate-900" style="font-family: 'Plus Jakarta Sans', sans-serif;">
+                                    {{ stats.verified_documents }}
+                                </p>
+                            </div>
+                            <div class="w-12 h-12 rounded-lg bg-teal-100 flex items-center justify-center">
+                                <svg class="w-6 h-6 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m7 0a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="mt-4 text-xs text-slate-500">
+                            <span class="text-green-600 font-semibold">✓ All verified</span>
+                        </div>
+                    </div>
+
+                    <!-- System Integrity -->
+                    <div class="card-elevated bg-white rounded-2xl p-6 animation-trigger stagger-4">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-slate-600 font-medium mb-2">System Integrity</p>
+                                <p class="text-3xl font-bold text-slate-900" style="font-family: 'Plus Jakarta Sans', sans-serif;">
+                                    {{ stats.system_integrity }}%
+                                </p>
+                            </div>
+                            <div class="w-12 h-12 rounded-lg bg-green-100 flex items-center justify-center animate-heartbeat">
+                                <svg class="w-6 h-6 text-green-600" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"></path>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="mt-4 text-xs text-slate-500">
+                            <span class="text-green-600 font-semibold">◆ Secure</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Content Grid -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    
+                    <!-- Recent Activity -->
+                    <div class="lg:col-span-2 animation-trigger">
+                        <div class="card-elevated bg-white rounded-2xl p-8">
+                            <h2 class="text-2xl font-bold text-slate-900 mb-6" style="font-family: 'Plus Jakarta Sans', sans-serif;">
+                                Recent Activity
+                            </h2>
+                            
+                            <div class="space-y-4">
+                                {% if recent_activity %}
+                                    {% for activity in recent_activity %}
+                                    <div class="flex items-start space-x-4 pb-4 border-b border-slate-100 last:border-b-0 last:pb-0">
+                                        <div class="flex-shrink-0 text-2xl">
+                                            {{ activity.icon }}
+                                        </div>
+                                        <div class="flex-1 min-w-0">
+                                            <div class="flex items-center justify-between">
+                                                <h3 class="text-sm font-semibold text-slate-900">
+                                                    {{ activity.title }}
+                                                    {% if activity.is_verified %}<span class="ml-2 text-xs px-2 py-1 bg-green-100 text-green-700 rounded">Verified</span>{% endif %}
+                                                </h3>
+                                                <span class="text-xs text-slate-500 whitespace-nowrap ml-4">
+                                                    {{ activity.time }}
+                                                </span>
+                                            </div>
+                                            <p class="text-sm text-slate-600 mt-1">
+                                                {{ activity.description }}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                {% else %}
+                                    <div class="text-center py-8">
+                                        <p class="text-slate-500">No activity yet</p>
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <button class="mt-6 w-full py-3 border border-slate-200 text-slate-700 rounded-xl font-semibold hover:bg-slate-50 transition">
+                                View All Activity
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Security Overview -->
+                    <div class="animation-trigger">
+                        <div class="card-elevated bg-white rounded-2xl p-8 h-full flex flex-col">
+                            <h2 class="text-2xl font-bold text-slate-900 mb-6" style="font-family: 'Plus Jakarta Sans', sans-serif;">
+                                Security Overview
+                            </h2>
+
+                            <!-- Heartbeat Animation -->
+                            <div class="flex-1 flex items-center justify-center mb-6">
+                                <div class="relative w-32 h-32">
+                                    <!-- Outer rings -->
+                                    <div class="absolute inset-0 rounded-full bg-green-50 border-2 border-green-200 animate-pulse"></div>
+                                    <div class="absolute inset-4 rounded-full bg-green-100 border-2 border-green-300"></div>
+                                    
+                                    <!-- Center heartbeat -->
+                                    <div class="absolute inset-8 rounded-full bg-gradient-to-br from-green-400 to-teal-500 flex items-center justify-center animate-heartbeat">
+                                        <svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"></path>
+                                        </svg>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Security Status -->
+                            <div class="{% if stats.system_integrity == 100 %}bg-green-50 border-green-200{% else %}bg-yellow-50 border-yellow-200{% endif %} rounded-lg p-4 border mb-6">
+                                <div class="flex items-center space-x-2 mb-2">
+                                    <svg class="w-5 h-5 {% if stats.system_integrity == 100 %}text-green-600{% else %}text-yellow-600{% endif %}" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M6.707 6.707a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0zm12-12a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0zM9 11a1 1 0 100-2 1 1 0 000 2zm8 0a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"></path>
+                                    </svg>
+                                    <p class="text-sm font-bold {% if stats.system_integrity == 100 %}text-green-900{% else %}text-yellow-900{% endif %}">
+                                        {% if stats.system_integrity == 100 %}All Systems Operational{% else %}{{ stats.system_integrity }}% Verified{% endif %}
+                                    </p>
+                                </div>
+                                <p class="text-xs {% if stats.system_integrity == 100 %}text-green-700{% else %}text-yellow-700{% endif %}">
+                                    HIPAA compliant encryption active. {% if system_integrity.verified_referrals > 0 %}{{ system_integrity.verified_referrals }} verified referral(s).{% endif %}
+                                    {% if system_integrity.verified_messages > 0 %}{{ system_integrity.verified_messages }} verified message(s).{% endif %}
+                                </p>
+                            </div>
+
+                            <!-- Security Features -->
+                            <div class="space-y-3 mb-6">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-2 h-2 rounded-full bg-green-500"></div>
+                                    <span class="text-sm text-slate-700">End-to-end encryption (ECC)</span>
+                                </div>
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-2 h-2 rounded-full bg-green-500"></div>
+                                    <span class="text-sm text-slate-700">2FA with digital signatures</span>
+                                </div>
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-2 h-2 rounded-full bg-green-500"></div>
+                                    <span class="text-sm text-slate-700">HMAC message authentication</span>
+                                </div>
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-2 h-2 rounded-full bg-green-500"></div>
+                                    <span class="text-sm text-slate-700">RSA key rotation available</span>
+                                </div>
+                            </div>
+
+                            <!-- Key Rotation Section -->
+                            <div class="p-4 bg-amber-50 border border-amber-200 rounded-lg mb-6">
+                                <p class="text-xs font-semibold text-amber-900 mb-2">🔄 KEY MANAGEMENT</p>
+                                <p class="text-xs text-amber-800 mb-3">
+                                    Last rotation: <span class="font-mono">{{ user.last_key_rotation if user.last_key_rotation else 'Never' }}</span>
+                                </p>
+                                <button class="w-full px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold rounded-lg transition" 
+                                        onclick="rotateKeys()">
+                                    🔐 Rotate Security Keys (RSA + ECC)
+                                </button>
+                            </div>
+
+                            {% if user_role == 'specialist' %}
+                            <a href="{{ url_for('admin_dashboard') }}" class="w-full block py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm font-semibold transition text-center mb-3">
+                                ⚙️ Admin Dashboard
+                            </a>
+                            {% endif %}
+
+                            {% if user_role == 'patient' %}
+                            <a href="{{ url_for('patient_prescriptions') }}" class="mt-2 w-full block py-3 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg text-sm font-semibold transition text-center">
+                                💊 View My Prescriptions
+                            </a>
+                            {% elif user_role == 'doctor' %}
+                            <div class="mt-2 space-y-3">
+                                <a href="{{ url_for('create_prescription') }}" class="w-full block py-3 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg text-sm font-semibold transition text-center">
+                                    💊 Create Prescription
+                                </a>
+                                <a href="{{ url_for('refer_specialist') }}" class="w-full block py-3 bg-teal-600 hover:bg-teal-700 text-white rounded-lg text-sm font-semibold transition text-center">
+                                    🔗 Refer Specialist
+                                </a>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Referral Modal -->
+<div id="referralModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-2xl p-8 max-w-md w-full mx-4">
+        <h3 class="text-2xl font-bold text-slate-900 mb-4">Issue Medical Referral</h3>
+        
+        <form onsubmit="submitReferral(event)">
+            <div class="mb-4">
+                <label class="block text-sm font-semibold text-slate-700 mb-2">Recipient</label>
+                <select id="referralRecipient" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500" required>
+                    <option value="">Select a specialist or patient...</option>
+                    <option value="1">Dr. Patient</option>
+                    <option value="3">Dr. Specialist</option>
+                </select>
+            </div>
+
+            <div class="mb-6">
+                <label class="block text-sm font-semibold text-slate-700 mb-2">Referral Content</label>
+                <textarea id="referralContent" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 h-32" placeholder="Enter referral details..." required></textarea>
+            </div>
+
+            <div class="flex gap-4">
+                <button type="button" onclick="closeReferralModal()" class="flex-1 py-2 border border-slate-200 text-slate-700 rounded-lg font-semibold hover:bg-slate-50 transition">
+                    Cancel
+                </button>
+                <button type="submit" class="flex-1 py-2 bg-cyan-600 text-white rounded-lg font-semibold hover:bg-cyan-700 transition">
+                    🔐 Sign & Encrypt
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Download Prescription Modal -->
+<div id="downloadModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-2xl p-8 max-w-md w-full mx-4">
+        <h3 class="text-2xl font-bold text-slate-900 mb-4">Download Prescription</h3>
+        
+        <form onsubmit="submitDownload(event)">
+            <div class="mb-6">
+                <label class="block text-sm font-semibold text-slate-700 mb-2">Select Document</label>
+                <select id="documentId" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500" required>
+                    <option value="">Loading documents...</option>
+                </select>
+            </div>
+
+            <div class="flex gap-4">
+                <button type="button" onclick="closeDownloadModal()" class="flex-1 py-2 border border-slate-200 text-slate-700 rounded-lg font-semibold hover:bg-slate-50 transition">
+                    Cancel
+                </button>
+                <button type="submit" class="flex-1 py-2 bg-teal-600 text-white rounded-lg font-semibold hover:bg-teal-700 transition">
+                    🔐 Decrypt & Download
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Attack Simulator Modal -->
+<div id="attackModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-2xl p-8 max-w-md w-full mx-4">
+        <h3 class="text-2xl font-bold text-red-600 mb-2">⚠️ Attack Simulator</h3>
+        <p class="text-sm text-slate-600 mb-4">Flip a random bit in encrypted content to prove HMAC integrity detection works.</p>
+        
+        <form onsubmit="submitAttack(event)">
+            <div class="mb-6">
+                <label class="block text-sm font-semibold text-slate-700 mb-2">Target Content</label>
+                <select id="attackTargetId" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500" required>
+                    <option value="">Select a message or referral...</option>
+                </select>
+            </div>
+
+            <div class="bg-red-50 border border-red-200 rounded-lg p-3 mb-6 text-xs text-red-700">
+                <strong>Demo:</strong> After attack, the HMAC verification will FAIL and show "Data Tampered" on the dashboard!
+            </div>
+
+            <div class="flex gap-4">
+                <button type="button" onclick="closeAttackModal()" class="flex-1 py-2 border border-slate-200 text-slate-700 rounded-lg font-semibold hover:bg-slate-50 transition">
+                    Cancel
+                </button>
+                <button type="submit" class="flex-1 py-2 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 transition">
+                    Execute Attack
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+// Modal Functions
+function showReferralModal() {
+    document.getElementById('referralModal').classList.remove('hidden');
+}
+
+function closeReferralModal() {
+    document.getElementById('referralModal').classList.add('hidden');
+}
+
+function showDownloadModal() {
+    document.getElementById('downloadModal').classList.remove('hidden');
+    loadDocuments();
+}
+
+function closeDownloadModal() {
+    document.getElementById('downloadModal').classList.add('hidden');
+}
+
+function showAttackSimulator() {
+    document.getElementById('attackModal').classList.remove('hidden');
+    loadAttackTargets();
+}
+
+function closeAttackModal() {
+    document.getElementById('attackModal').classList.add('hidden');
+}
+
+// Form Submissions
+async function submitReferral(event) {
+    event.preventDefault();
+    
+    const receiverId = document.getElementById('referralRecipient').value;
+    const content = document.getElementById('referralContent').value;
+    
+    try {
+        const response = await fetch('{{ url_for("issue_referral") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: new URLSearchParams({
+                'receiver_id': receiverId,
+                'referral_content': content
+            })
+        });
+        
+        if (response.ok) {
+            alert('Referral created successfully with digital signature and encryption!');
+            closeReferralModal();
+        } else {
+            const error = await response.json();
+            alert('Error: ' + error.error);
+        }
+    } catch (error) {
+        alert('Error creating referral: ' + error.message);
+    }
+}
+
+async function submitDownload(event) {
+    event.preventDefault();
+    
+    const docId = document.getElementById('documentId').value;
+    
+    try {
+        const response = await fetch(`{{ url_for("download_prescription", doc_id=0) }}`.replace('/0', '/' + docId));
+        
+        if (response.ok) {
+            const data = await response.json();
+            alert('Prescription downloaded and decrypted!\n\nContent: ' + data.prescription + '\n\nIntegrity: ' + (data.verified ? 'VERIFIED ✓' : 'TAMPERED ⚠'));
+            closeDownloadModal();
+        } else {
+            const error = await response.json();
+            alert('⚠️ ' + error.error);
+        }
+    } catch (error) {
+        alert('Error downloading: ' + error.message);
+    }
+}
+
+async function submitAttack(event) {
+    event.preventDefault();
+    
+    const targetId = document.getElementById('attackTargetId').value;
+    
+    try {
+        const response = await fetch(`{{ url_for("simulate_attack", content_id=0) }}`.replace('/0', '/' + targetId), {
+            method: 'POST'
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            alert('✓ Attack executed!\n\n' + data.message + '\n\nCheck the dashboard - the target will now show "Data Tampered"!');
+            closeAttackModal();
+        } else {
+            const error = await response.json();
+            alert('Error: ' + error.error);
+        }
+    } catch (error) {
+        alert('Error simulating attack: ' + error.message);
+    }
+}
+
+async function loadDocuments() {
+    // For now, load from recent activity
+    // In production, would fetch from /documents endpoint
+    document.getElementById('documentId').innerHTML = `
+        <option value="1">Blood work results (Lab Result)</option>
+        <option value="2">Digital prescription for patient (Prescription)</option>
+    `;
+}
+
+async function loadAttackTargets() {
+    // Load messages and referrals as potential targets
+    document.getElementById('attackTargetId').innerHTML = `
+        <option value="">Select a message or referral...</option>
+        <option value="1">Message 1: Follow-up question</option>
+        <option value="1" class="referral">Referral 1: Cardiology consultation</option>
+    `;
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+async function rotateKeys() {
+    if (!confirm('🔐 This will generate new RSA (2048-bit) and ECC (256-bit) key pairs.\n\nContinue with key rotation?')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch('{{ url_for("rotate_keys") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            alert('✅ Key Rotation Successful!\n\n' + data.message + '\n\nYour new keys are now active for encryption and authentication.');
+            location.reload();
+        } else {
+            const error = await response.json();
+            alert('❌ Error: ' + error.error);
+        }
+    } catch (error) {
+        alert('❌ Error rotating keys: ' + error.message);
+    }
+}
+</script>
+{% endblock %}

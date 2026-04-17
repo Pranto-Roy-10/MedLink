@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+
+{% block title %}2FA Verification - MedLink{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center px-4 py-12" style="background: linear-gradient(135deg, #F8FAFC 0%, #F0F9FF 100%);">
+    <div class="w-full max-w-md">
+        <!-- 2FA Verification Card -->
+        <div class="card-elevated bg-white rounded-3xl p-8 animate-fade-in-up">
+            <!-- Logo -->
+            <div class="flex items-center justify-center mb-8">
+                <div class="w-12 h-12 bg-gradient-to-br from-cyan-500 to-teal-600 rounded-lg flex items-center justify-center mr-3">
+                    <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                    </svg>
+                </div>
+                <span class="text-2xl font-bold text-slate-900" style="font-family: 'Plus Jakarta Sans', sans-serif;">MedLink</span>
+            </div>
+
+            <!-- Heading -->
+            <h1 class="text-3xl font-bold text-slate-900 text-center mb-2" style="font-family: 'Plus Jakarta Sans', sans-serif;">
+                Verify Your Identity
+            </h1>
+            <p class="text-center text-slate-600 mb-8">
+                Complete the two-factor authentication challenge
+            </p>
+
+            <!-- Welcome Message -->
+            {% if user_name %}
+            <div class="mb-6 p-4 bg-cyan-50 border border-cyan-200 rounded-lg">
+                <p class="text-sm text-cyan-900">
+                    Welcome back, <span class="font-semibold">{{ user_name }}</span>!
+                </p>
+            </div>
+            {% endif %}
+
+            <!-- Error Message -->
+            {% if error %}
+            <div class="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+                <p class="text-sm text-red-700">{{ error }}</p>
+            </div>
+            {% endif %}
+
+            <!-- 2FA Challenge Explanation -->
+            <div class="mb-8 p-4 bg-slate-50 border border-slate-200 rounded-lg">
+                <p class="text-xs text-slate-600 font-semibold mb-3">DIGITAL SIGNATURE CHALLENGE</p>
+                <div class="space-y-2">
+                    <div class="flex items-start space-x-3">
+                        <svg class="w-5 h-5 text-cyan-600 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                        </svg>
+                        <div>
+                            <p class="text-sm text-slate-700 font-medium">Challenge Number Generated</p>
+                            <p class="text-xs text-slate-600">Backend created a cryptographic challenge</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start space-x-3">
+                        <svg class="w-5 h-5 text-cyan-600 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                        </svg>
+                        <div>
+                            <p class="text-sm text-slate-700 font-medium">Challenge Signed with Your Private Key</p>
+                            <p class="text-xs text-slate-600">RSA signature proves device identity</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start space-x-3">
+                        <svg class="w-5 h-5 text-cyan-600 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                        </svg>
+                        <div>
+                            <p class="text-sm text-slate-700 font-medium">Your Session Will Be Authenticated</p>
+                            <p class="text-xs text-slate-600">Verify the code below to proceed</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Challenge Code Display -->
+            <div class="mb-8 p-6 bg-gradient-to-br from-cyan-50 to-blue-50 rounded-xl border border-cyan-200">
+                <p class="text-center text-xs text-slate-600 font-semibold mb-3">VERIFICATION CODE</p>
+                <div class="text-center">
+                    <p class="text-5xl font-bold text-cyan-600 font-mono tracking-wider" style="letter-spacing: 0.5em;">
+                        {% if challenge_number %}
+                            {% set code_display = challenge_number %}
+                            {{ code_display[0] }} {{ code_display[1] }} {{ code_display[2] }} {{ code_display[3] }} {{ code_display[4] }} {{ code_display[5] }}
+                        {% else %}
+                            - - - - - -
+                        {% endif %}
+                    </p>
+                </div>
+                <p class="text-center text-xs text-slate-500 mt-4">
+                    Backend signed this code with your RSA private key
+                </p>
+            </div>
+
+            <!-- 2FA Form -->
+            <form method="POST" action="{{ url_for('verify_2fa') }}" class="space-y-5">
+                <!-- 6-Digit Input Field -->
+                <div>
+                    <label for="2fa_code" class="block text-sm font-semibold text-slate-900 mb-2">
+                        Enter the 6-digit code to verify your identity
+                    </label>
+                    <input 
+                        type="text" 
+                        id="2fa_code" 
+                        name="2fa_code" 
+                        maxlength="6" 
+                        inputmode="numeric"
+                        pattern="[0-9]{6}"
+                        required 
+                        class="w-full px-4 py-4 bg-slate-50 border border-slate-200 rounded-xl text-center text-3xl font-bold tracking-widest placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition text-slate-900 font-mono"
+                        placeholder="000000"
+                    >
+                    <p class="text-xs text-slate-500 mt-2">
+                        Type or paste the 6 digits shown above
+                    </p>
+                </div>
+
+                <!-- Verify Button -->
+                <button 
+                    type="submit" 
+                    class="btn-primary w-full py-3 bg-gradient-to-r from-cyan-500 to-teal-600 text-white rounded-xl font-semibold hover:shadow-lg"
+                >
+                    Verify Identity
+                </button>
+            </form>
+
+            <!-- Help Information -->
+            <div class="mt-8 pt-6 border-t border-slate-200">
+                <p class="text-xs text-slate-600 text-center mb-4">
+                    🔐 <span class="font-semibold">Cryptographic Challenge-Response Authentication</span>
+                </p>
+                <div class="space-y-2 text-xs text-slate-600">
+                    <p>• This is a 2FA implementation using RSA digital signatures</p>
+                    <p>• The code above was signed with your RSA private key</p>
+                    <p>• Verifying it proves you control this device/session</p>
+                    <p>• No SMS or email codes - pure cryptographic authentication</p>
+                </div>
+            </div>
+
+            <!-- Back Link -->
+            <div class="mt-6 text-center">
+                <a href="{{ url_for('login') }}" class="text-sm text-slate-600 hover:text-slate-900 font-medium">
+                    ← Back to Login
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Auto-format input as user types
+    const input = document.getElementById('2fa_code');
+    input.addEventListener('input', function(e) {
+        // Only allow digits
+        this.value = this.value.replace(/[^0-9]/g, '');
+        
+        // Auto-submit when 6 digits entered
+        if (this.value.length === 6) {
+            // Optional: Uncomment to auto-submit
+            // this.form.submit();
+        }
+    });
+    
+    // Focus on input on page load
+    input.focus();
+</script>
+{% endblock %}

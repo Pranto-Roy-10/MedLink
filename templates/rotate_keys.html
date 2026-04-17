@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+
+{% block title %}Rotate Security Keys - MedLink{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-slate-50" style="background-color: #F8FAFC;">
+    <div class="max-w-2xl mx-auto px-6 py-12">
+        <!-- Header -->
+        <div class="mb-12 text-center">
+            <h1 class="text-4xl font-bold text-slate-900 mb-3" style="font-family: 'Plus Jakarta Sans', sans-serif;">
+                🔑 Rotate Security Keys
+            </h1>
+            <p class="text-lg text-slate-600">
+                Generate new encryption keys and securely migrate data
+            </p>
+        </div>
+
+        <!-- Current Keys Info -->
+        <div class="bg-white rounded-2xl p-8 mb-8 shadow-lg">
+            <h2 class="text-2xl font-bold text-slate-900 mb-6">Current Keys</h2>
+            
+            <div class="space-y-6">
+                <!-- RSA Keys -->
+                <div>
+                    <h3 class="text-lg font-semibold text-slate-900 mb-3">RSA Public Key</h3>
+                    <div class="bg-slate-100 rounded-lg p-4 font-mono text-sm text-slate-700 break-words">
+                        e = {{ current_rsa_e }}<br>
+                        n = {{ current_rsa_n_preview }}
+                    </div>
+                    <p class="text-xs text-slate-600 mt-2">256-bit RSA key pair</p>
+                </div>
+
+                <!-- Key Rotation Info -->
+                <div class="bg-blue-50 rounded-lg p-4 border border-blue-300">
+                    <h3 class="font-semibold text-blue-900 mb-2">🔄 What Happens When You Rotate Keys?</h3>
+                    <ul class="space-y-2 text-sm text-blue-800">
+                        <li>✓ New RSA key pair generated (256-bit)</li>
+                        <li>✓ New ECC key pair generated</li>
+                        <li>✓ All existing encrypted data remains secure</li>
+                        <li>✓ New data encrypted with new keys</li>
+                        <li>✓ Old keys kept for historical data decryption</li>
+                        <li>✓ Audit log updated with rotation event</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Rotation Form -->
+        <div class="bg-white rounded-2xl p-8 shadow-lg border-2 border-orange-300">
+            <h2 class="text-2xl font-bold text-slate-900 mb-6">Rotate Keys Now</h2>
+            
+            <div class="bg-orange-50 rounded-lg p-4 mb-6 border border-orange-300">
+                <p class="text-sm text-orange-900">
+                    <strong>⚠️ Warning:</strong> Key rotation is a sensitive operation. New keys will be generated and all future messages will use the new keys.
+                </p>
+            </div>
+
+            <form id="rotateForm" class="space-y-4">
+                <div>
+                    <label class="flex items-center">
+                        <input type="checkbox" name="confirm" required class="w-4 h-4 text-orange-500 rounded focus:ring-2 focus:ring-orange-300">
+                        <span class="ml-3 text-sm text-slate-700">
+                            I understand that this will generate new keys for my account
+                        </span>
+                    </label>
+                </div>
+
+                <button type="submit" class="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-bold py-4 px-6 rounded-lg transition transform hover:scale-105">
+                    🔄 Rotate Keys
+                </button>
+            </form>
+        </div>
+
+        <!-- Success Message -->
+        <div id="successMessage" class="mt-8 hidden">
+            <div class="bg-green-50 rounded-2xl p-8 shadow-lg border-2 border-green-300">
+                <h2 class="text-2xl font-bold text-green-900 mb-4">✅ Keys Rotated Successfully</h2>
+                
+                <div class="space-y-4 mb-6">
+                    <div>
+                        <p class="text-sm text-green-700 font-semibold">New RSA Public Key</p>
+                        <p id="newRsaE" class="font-mono text-sm bg-slate-100 p-3 rounded mt-2 break-words"></p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-green-700 font-semibold">New RSA Modulus (Preview)</p>
+                        <p id="newRsaN" class="font-mono text-sm bg-slate-100 p-3 rounded mt-2 break-words"></p>
+                    </div>
+                </div>
+
+                <a href="{{ url_for('dashboard') }}" class="inline-block bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-lg transition">
+                    Back to Dashboard
+                </a>
+            </div>
+        </div>
+
+        <!-- Go Back Button -->
+        <div class="mt-8">
+            <a href="{{ url_for('dashboard') }}" class="inline-block text-cyan-600 hover:text-cyan-700 font-semibold">
+                ← Back to Dashboard
+            </a>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('rotateForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    try {
+        const response = await fetch('{{ url_for("rotate_keys") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: ''
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            document.getElementById('newRsaE').textContent = data.new_rsa_e;
+            document.getElementById('newRsaN').textContent = data.new_rsa_n_preview;
+            document.getElementById('successMessage').classList.remove('hidden');
+            document.querySelector('form').style.display = 'none';
+            
+            // Scroll to success message
+            document.getElementById('successMessage').scrollIntoView({ behavior: 'smooth' });
+        } else {
+            alert('Error: ' + data.error);
+        }
+    } catch (error) {
+        alert('Error: ' + error.message);
+    }
+});
+</script>
+{% endblock %}

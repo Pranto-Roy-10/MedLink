@@ -253,57 +253,48 @@
                             </div>
 
                             <!-- Security Features -->
-                            <div class="space-y-3 mb-6">
+                            <div class="space-y-3">
                                 <div class="flex items-center space-x-3">
                                     <div class="w-2 h-2 rounded-full bg-green-500"></div>
-                                    <span class="text-sm text-slate-700">End-to-end encryption (ECC)</span>
+                                    <span class="text-sm text-slate-700">End-to-end encryption</span>
                                 </div>
                                 <div class="flex items-center space-x-3">
                                     <div class="w-2 h-2 rounded-full bg-green-500"></div>
-                                    <span class="text-sm text-slate-700">2FA with digital signatures</span>
+                                    <span class="text-sm text-slate-700">2FA enabled</span>
                                 </div>
                                 <div class="flex items-center space-x-3">
                                     <div class="w-2 h-2 rounded-full bg-green-500"></div>
-                                    <span class="text-sm text-slate-700">HMAC message authentication</span>
+                                    <span class="text-sm text-slate-700">Session secure</span>
                                 </div>
                                 <div class="flex items-center space-x-3">
                                     <div class="w-2 h-2 rounded-full bg-green-500"></div>
-                                    <span class="text-sm text-slate-700">RSA key rotation available</span>
+                                    <span class="text-sm text-slate-700">Backup verified</span>
                                 </div>
                             </div>
 
-                            <!-- Key Rotation Section -->
-                            <div class="p-4 bg-amber-50 border border-amber-200 rounded-lg mb-6">
-                                <p class="text-xs font-semibold text-amber-900 mb-2">🔄 KEY MANAGEMENT</p>
-                                <p class="text-xs text-amber-800 mb-3">
-                                    Last rotation: <span class="font-mono">{{ user.last_key_rotation if user.last_key_rotation else 'Never' }}</span>
-                                </p>
-                                <button class="w-full px-3 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold rounded-lg transition" 
-                                        onclick="rotateKeys()">
-                                    🔐 Rotate Security Keys (RSA + ECC)
-                                </button>
-                            </div>
+                            <!-- Profile & Settings Section -->
+                            <div class="mt-6 space-y-3">
+                                <a href="{{ url_for('profile') }}" class="w-full block py-3 bg-gradient-to-r from-cyan-500 to-teal-600 hover:shadow-lg text-white rounded-lg text-sm font-semibold transition text-center">
+                                    👤 View My Profile
+                                </a>
 
-                            {% if user_role == 'specialist' %}
-                            <a href="{{ url_for('admin_dashboard') }}" class="w-full block py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm font-semibold transition text-center mb-3">
-                                ⚙️ Admin Dashboard
-                            </a>
-                            {% endif %}
-
-                            {% if user_role == 'patient' %}
-                            <a href="{{ url_for('patient_prescriptions') }}" class="mt-2 w-full block py-3 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg text-sm font-semibold transition text-center">
-                                💊 View My Prescriptions
-                            </a>
-                            {% elif user_role == 'doctor' %}
-                            <div class="mt-2 space-y-3">
+                                {% if user_role == 'patient' %}
+                                <a href="{{ url_for('patient_prescriptions') }}" class="w-full block py-3 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg text-sm font-semibold transition text-center">
+                                    💊 View My Prescriptions
+                                </a>
+                                {% elif user_role == 'doctor' %}
                                 <a href="{{ url_for('create_prescription') }}" class="w-full block py-3 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg text-sm font-semibold transition text-center">
                                     💊 Create Prescription
                                 </a>
                                 <a href="{{ url_for('refer_specialist') }}" class="w-full block py-3 bg-teal-600 hover:bg-teal-700 text-white rounded-lg text-sm font-semibold transition text-center">
                                     🔗 Refer Specialist
                                 </a>
+                                {% else %}
+                                <button class="w-full py-2 border border-slate-200 text-slate-700 rounded-lg text-sm font-semibold hover:bg-slate-50 transition">
+                                    View Security Settings
+                                </button>
+                                {% endif %}
                             </div>
-                            {% endif %}
                         </div>
                     </div>
                 </div>
@@ -524,32 +515,6 @@ function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
-}
-
-async function rotateKeys() {
-    if (!confirm('🔐 This will generate new RSA (2048-bit) and ECC (256-bit) key pairs.\n\nContinue with key rotation?')) {
-        return;
-    }
-    
-    try {
-        const response = await fetch('{{ url_for("rotate_keys") }}', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            }
-        });
-        
-        if (response.ok) {
-            const data = await response.json();
-            alert('✅ Key Rotation Successful!\n\n' + data.message + '\n\nYour new keys are now active for encryption and authentication.');
-            location.reload();
-        } else {
-            const error = await response.json();
-            alert('❌ Error: ' + error.error);
-        }
-    } catch (error) {
-        alert('❌ Error rotating keys: ' + error.message);
-    }
 }
 </script>
 {% endblock %}

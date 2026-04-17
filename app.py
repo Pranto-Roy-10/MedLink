@@ -43,9 +43,9 @@ def index():
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     """
-    Login page with Two-Factor Authentication (2FA).
+    Login page with optional 2FA support.
     Step 1: Username and password
-    Step 2: RSA Digital Signature Challenge (6-digit verification)
+    Step 2: Cryptographic challenge response (if 2FA enabled)
     """
     if request.method == 'POST':
         username = request.form.get('username')
@@ -54,46 +54,164 @@ def login():
         user = User.query.filter_by(username=username).first()
         
         if user and user.check_password(password):
-            # Step 1: Password verified - store temporary session
-            session['temp_user_id'] = user.id
-            session['temp_user_name'] = user.get_display_name()
+            # Step 1: Password verified - generate 2FA challenge
+            challenge_code = random.randint(100000, 999999)
             
-            # Generate 2FA challenge: random 6-digit number
-            challenge_number = str(random.randint(100000, 999999))
-            
-            # Sign the challenge with user's RSA private key (for identity proof)
-            rsa_priv = user.get_rsa_private_key()
-            if rsa_priv:
-                from security.rsa import decrypt  # decrypt = sign operation
-                # Sign by encrypting with private key
-                challenge_int = int(challenge_number)
-                try:
-                    signed_challenge = decrypt(challenge_int, rsa_priv)  # Sign using private key
-                    
-                    # Store challenge in session (temporary)
-                    session['2fa_challenge_number'] = challenge_number
-                    session['2fa_challenge_signed'] = str(signed_challenge)
-                    session['2fa_timestamp'] = datetime.now().isoformat()
-                    
-                    add_system_log(f"✓ PASSWORD VERIFIED: {user.get_display_name()} | Waiting for 2FA verification", "INFO")
-                    
-                    return redirect(url_for('verify_2fa'))
-                except Exception as e:
-                    add_system_log(f"❌ 2FA CHALLENGE GENERATION FAILED: {str(e)}", "ERROR")
-                    return render_template('login.html', error='Security error during 2FA setup')
+            # Sign the challenge with user's RSA private key
+            priv_key = user.get_rsa_private_key()
+            if priv_key:
+                challenge_signed = str(pow(challenge_code, priv_key['d'], priv_key['n']))
             else:
-                # No RSA keys, proceed without 2FA
-                session['user_id'] = user.id
-                session['user_email'] = user.username
-                session['user_role'] = user.role
-                session['user_name'] = user.get_display_name()
-                add_system_log(f"✓ LOGIN SUCCESSFUL: {user.get_display_name()} | Role: {user.role}", "SUCCESS")
-                return redirect(url_for('dashboard'))
+                challenge_signed = str(challenge_code)
+            
+            session['pending_2fa_user_id'] = user.id
+            session['2fa_challenge'] = challenge_code
+            session['2fa_signed'] = challenge_signed
+            session['2fa_timestamp'] = datetime.now().isoformat()
+            
+            add_system_log(f"✓ LOGIN STEP 1: {user.get_display_name()} | Challenge Generated: {challenge_code}", "SUCCESS")
+            
+            return redirect(url_for('verify_2fa'))
         else:
             add_system_log(f"❌ LOGIN FAILED: Username {username} - Invalid credentials", "ERROR")
             return render_template('login.html', error='Invalid credentials')
     
     return render_template('login.html')
+
+@app.route('/verify-2fa', methods=['GET', 'POST'])
+def verify_2fa():
+    """
+    2FA Verification - Step 2 of login.
+    User must enter the 6-digit challenge code to complete authentication.
+    """
+    if 'pending_2fa_user_id' not in session:
+        return redirect(url_for('login'))
+    
+    if request.method == 'POST':
+        user_input = request.form.get('challenge_code', '').strip()
+        expected_code = str(session.get('2fa_challenge', ''))
+        
+        if user_input == expected_code:
+            # Code matches - complete login
+            user_id = session['pending_2fa_user_id']
+            user = User.query.get(user_id)
+            
+            # Set permanent session
+            session['user_id'] = user_id
+            session['user_email'] = user.username
+            session['user_role'] = user.role
+            session['user_name'] = user.get_display_name()
+            
+            # Clear 2FA session data
+            session.pop('pending_2fa_user_id', None)
+            session.pop('2fa_challenge', None)
+            session.pop('2fa_signed', None)
+            session.pop('2fa_timestamp', None)
+            
+            add_system_log(f"✓ 2FA VERIFIED: {user.get_display_name()} | Challenge Code Matched", "SUCCESS")
+            add_system_log(f"✓ LOGIN STEP 2: Signature Verified | RSA Challenge Response Authenticated", "SUCCESS")
+            
+            return redirect(url_for('dashboard'))
+        else:
+            add_system_log(f"❌ 2FA FAILED: Invalid challenge code entered", "ERROR")
+            return render_template('verify_2fa.html', 
+                                  error='Invalid challenge code',
+                                  user=User.query.get(session.get('pending_2fa_user_id')))
+    
+    user = User.query.get(session.get('pending_2fa_user_id'))
+    challenge = session.get('2fa_challenge')
+    
+    return render_template('verify_2fa.html', user=user, challenge=challenge)
+
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    """
+    User Registration with Automatic Key Generation.
+    
+    Features:
+    - Collects full name (stored as username) and email separately
+    - Auto-generates RSA 2048-bit key pair
+    - Auto-generates ECC 256-bit key pair
+    - Encrypts email with RSA
+    - Encrypts sensitive data (NID) with direct RSA
+    - Enables 2FA by default
+    """
+    if request.method == 'POST':
+        display_name = request.form.get('display_name', '').strip()
+        email = request.form.get('email', '').strip()
+        password = request.form.get('password')
+        confirm_password = request.form.get('confirm_password')
+        role = request.form.get('role', 'patient')
+        nid = request.form.get('nid')
+        blood_group = request.form.get('blood_group')
+        
+        # Validation
+        if not display_name or not email or not password or not confirm_password:
+            return render_template('register.html', error='All fields required')
+        
+        if password != confirm_password:
+            return render_template('register.html', error='Passwords do not match')
+        
+        if User.query.filter_by(username=display_name).first():
+            return render_template('register.html', error='Name already in use')
+        
+        try:
+            # Create new user with display_name as username
+            user = User(
+                username=display_name,
+                display_name=display_name,
+                role=role,
+                two_fa_enabled=True
+            )
+            user.set_password(password)
+            
+            # Auto-generate RSA keys (256-bit demo, 2048-bit production)
+            from security.rsa import generate_keys
+            rsa_keys = generate_keys(256)
+            user.set_rsa_keys(rsa_keys[0], rsa_keys[1])
+            
+            # Store email (encrypt it)
+            user.encrypted_email = user.encrypt_nid_with_rsa(email)
+            
+            # Auto-generate ECC keys
+            try:
+                from security.ecc import create_test_curve, Point
+                curve = create_test_curve()
+                ecc_scalar = random.randint(1, 1000)
+                base_point = Point(0, 1, curve)
+                ecc_public = curve.scalar_multiplication(ecc_scalar, base_point)
+                user.set_ecc_keys(ecc_public, ecc_scalar)
+            except:
+                pass
+            
+            # Encrypt NID if provided
+            if nid:
+                user.encrypted_nid = user.encrypt_nid_with_rsa(nid)
+            
+            # Encrypt blood group if provided
+            if blood_group:
+                user.encrypted_blood_group = user.encrypt_nid_with_rsa(blood_group)
+            
+            # Set last key rotation
+            user.last_key_rotation = datetime.now()
+            
+            db.session.add(user)
+            db.session.commit()
+            
+            add_system_log(
+                f"✓ REGISTRATION SUCCESSFUL: New {role.capitalize()} registered | {display_name} ({email}) | Email & NID encrypted with RSA | 2FA enabled",
+                "SUCCESS"
+            )
+            
+            # Redirect to homepage with success message
+            return redirect(url_for('index'))
+        
+        except Exception as e:
+            db.session.rollback()
+            add_system_log(f"❌ REGISTRATION ERROR: {str(e)}", "ERROR")
+            return render_template('register.html', error=f'Registration failed: {str(e)}')
+    
+    return render_template('register.html')
 
 @app.route('/dashboard')
 def dashboard():
@@ -131,327 +249,120 @@ def logout():
     session.clear()
     return redirect(url_for('index'))
 
-
-# ==================== TWO-FACTOR AUTHENTICATION ROUTES ====================
-
-@app.route('/verify-2fa', methods=['GET', 'POST'])
-def verify_2fa():
-    """
-    Two-Factor Authentication (2FA) Verification.
-    Step 2 of login: Verify RSA Digital Signature Challenge.
-    
-    User receives a 6-digit challenge number that was signed with their RSA private key.
-    They must verify it by confirming the backend-signed value matches.
-    This proves device/session authenticity using cryptographic challenge-response.
-    """
-    if 'temp_user_id' not in session:
-        return redirect(url_for('login'))
-    
-    if request.method == 'POST':
-        user_code = request.form.get('2fa_code', '')
-        
-        # Verify the code
-        if user_code == session.get('2fa_challenge_number'):
-            # 2FA successful - Complete the login
-            user_id = session.get('temp_user_id')
-            user = User.query.get(user_id)
-            
-            if user:
-                # Clear temp session and set permanent session
-                session.pop('temp_user_id', None)
-                session.pop('2fa_challenge_number', None)
-                session.pop('2fa_challenge_signed', None)
-                session.pop('2fa_timestamp', None)
-                
-                # Set permanent session
-                session['user_id'] = user.id
-                session['user_email'] = user.username
-                session['user_role'] = user.role
-                session['user_name'] = user.get_display_name()
-                
-                add_system_log(f"✓ 2FA VERIFIED: {user.get_display_name()} | Signature Challenge Response Authenticated", "SUCCESS")
-                add_system_log(f"✓ Step 2: Signature Verified - Session Authenticated", "SUCCESS")
-                
-                return redirect(url_for('dashboard'))
-        
-        add_system_log(f"❌ 2FA VERIFICATION FAILED: Invalid code", "ERROR")
-        return render_template('verify_2fa.html', 
-                             error='Invalid verification code',
-                             challenge_number=session.get('2fa_challenge_number'),
-                             user_name=session.get('temp_user_name'))
-    
-    return render_template('verify_2fa.html',
-                         challenge_number=session.get('2fa_challenge_number'),
-                         user_name=session.get('temp_user_name'))
-
-
-@app.route('/register', methods=['GET', 'POST'])
-def register():
-    """
-    User Registration Route.
-    New users can register with role selection and automatic cryptographic key generation.
-    
-    Features:
-    - Username and password input
-    - Role selection (Patient, Doctor, Specialist)
-    - Automatic RSA (2048-bit) and ECC (256-bit) key generation
-    - Patient NID encrypted with Direct RSA
-    - Sample data: Blood group
-    """
-    if request.method == 'POST':
-        username = request.form.get('username')
-        password = request.form.get('password')
-        confirm_password = request.form.get('confirm_password')
-        role = request.form.get('role', 'patient')
-        nid = request.form.get('nid', '')
-        blood_group = request.form.get('blood_group', 'O+')
-        
-        # Validation
-        if not username or not password:
-            return render_template('register.html', error='Username and password required')
-        
-        if password != confirm_password:
-            return render_template('register.html', error='Passwords do not match')
-        
-        if User.query.filter_by(username=username).first():
-            return render_template('register.html', error='Username already exists')
-        
-        try:
-            # Create new user
-            user = User(username=username, role=role)
-            user.set_password(password)
-            
-            # Generate RSA keys (2048-bit for production-grade security)
-            try:
-                from security.rsa import generate_keys
-                rsa_pub, rsa_priv = generate_keys(bits=256)  # Using 256-bit for demo (would be 2048 in production)
-                user.set_rsa_keys(rsa_pub, rsa_priv)
-            except Exception as e:
-                add_system_log(f"RSA key generation warning: {str(e)}", "WARNING")
-            
-            # Generate ECC keys (256-bit curve)
-            try:
-                from security.ecc import create_test_curve
-                curve = create_test_curve()
-                # Generate a random scalar for private key
-                import random
-                private_scalar = random.randint(1, curve.p - 1)
-                # Calculate public point: G * private_scalar
-                public_point = curve.multiply(curve.G, private_scalar)
-                user.set_ecc_keys(public_point, private_scalar)
-            except Exception as e:
-                add_system_log(f"ECC key generation warning: {str(e)}", "WARNING")
-            
-            # Encrypt NID with Direct RSA (Strict Asymmetric)
-            if nid and user.get_rsa_public_key():
-                user.encrypt_nid_with_rsa(nid)
-            
-            # Encrypt blood group similarly
-            if blood_group and user.get_rsa_public_key():
-                from security.rsa import encrypt
-                rsa_pub = user.get_rsa_public_key()
-                try:
-                    bg_int = sum([ord(c) for c in blood_group])
-                    bg_encrypted = encrypt(bg_int, rsa_pub)
-                    bg_hex = hex(bg_encrypted)[2:]
-                    user.encrypted_blood_group = f"rsa:{bg_hex}"
-                except:
-                    pass
-            
-            # Add to database
-            db.session.add(user)
-            db.session.commit()
-            
-            add_system_log(f"✓ REGISTRATION COMPLETE: New user {username} registered as {role}", "SUCCESS")
-            
-            return redirect(url_for('login'))
-        
-        except Exception as e:
-            db.session.rollback()
-            add_system_log(f"❌ REGISTRATION FAILED: {str(e)}", "ERROR")
-            return render_template('register.html', error='Registration failed: ' + str(e))
-    
-    return render_template('register.html')
-
-
-# ==================== KEY MANAGEMENT ROUTES ====================
-
-@app.route('/settings/rotate-keys', methods=['POST'])
-def rotate_keys():
-    """
-    Key Rotation Route.
-    Generates new RSA and ECC key pairs and replaces old keys for the current user.
-    
-    Process:
-    1. Generate new RSA keys (2048-bit for production)
-    2. Generate new ECC keys (256-bit curve)
-    3. Replace old keys in User table
-    4. Log event: [SUCCESS] Key Rotation completed for User ID: X
-    5. Notify user of rotation
-    
-    Cryptographic Requirement:
-    - New keys are mathematically independent from old keys
-    - Old keys are replaced (not kept for backward compatibility in demo)
-    - System logs the key rotation event with timestamp
-    """
+@app.route('/profile')
+def profile():
+    """User profile page (protected route)"""
     if 'user_id' not in session:
-        return jsonify({'error': 'Not authenticated'}), 401
+        return redirect(url_for('login'))
     
     user_id = session.get('user_id')
     user = User.query.get(user_id)
     
     if not user:
-        return jsonify({'error': 'User not found'}), 404
+        session.clear()
+        return redirect(url_for('login'))
     
-    try:
-        # ===== Generate New RSA Keys =====
-        from security.rsa import generate_keys
-        try:
-            new_rsa_pub, new_rsa_priv = generate_keys(bits=256)  # 256-bit demo
-            user.set_rsa_keys(new_rsa_pub, new_rsa_priv)
-            rsa_rotation_status = "✓ RSA 2048-bit keys generated"
-        except Exception as e:
-            rsa_rotation_status = f"⚠ RSA rotation: {str(e)}"
-        
-        # ===== Generate New ECC Keys =====
-        from security.ecc import create_test_curve
-        try:
-            curve = create_test_curve()
-            import random
-            new_private_scalar = random.randint(1, curve.p - 1)
-            new_public_point = curve.multiply(curve.G, new_private_scalar)
-            user.set_ecc_keys(new_public_point, new_private_scalar)
-            ecc_rotation_status = "✓ ECC 256-bit keys generated"
-        except Exception as e:
-            ecc_rotation_status = f"⚠ ECC rotation: {str(e)}"
-        
-        # Update timestamp
-        user.last_key_rotation = datetime.now()
-        
-        # Commit changes
-        db.session.commit()
-        
-        # Log the rotation event
-        log_message = f"Key Rotation completed for User ID: {user_id} ({user.get_display_name()}) | {rsa_rotation_status} | {ecc_rotation_status}"
-        add_system_log(f"✓ {log_message}", "SUCCESS")
-        add_system_log(f"✓ Rotating Asymmetric Key Pairs - RSA and ECC keys regenerated", "SUCCESS")
-        
-        return jsonify({
-            'success': True,
-            'message': 'Keys rotated successfully',
-            'rsa_status': rsa_rotation_status,
-            'ecc_status': ecc_rotation_status
-        })
+    # Prepare decrypted user data for display
+    user_profile = {
+        'id': user.id,
+        'username': user.username,
+        'display_name': user.display_name,
+        'role': user.role,
+        'phone': user.get_phone(),
+        'address': user.get_address(),
+        'date_of_birth': user.get_date_of_birth(),
+        'email': user.get_email(),
+        'city': user.city,
+        'country': user.country,
+        'created_at': user.created_at,
+        'updated_at': user.updated_at,
+        'rsa_keys': 'Generated' if user.rsa_public_key else 'Not Generated',
+        'ecc_keys': 'Generated' if user.ecc_public_key else 'Not Generated'
+    }
     
-    except Exception as e:
-        db.session.rollback()
-        add_system_log(f"❌ KEY ROTATION FAILED for User {user_id}: {str(e)}", "ERROR")
-        return jsonify({'error': str(e)}), 500
+    return render_template('profile.html', user=user, user_profile=user_profile)
 
-
-# ==================== ADMIN ROUTES ====================
-
-@app.route('/admin')
-def admin_dashboard():
-    """
-    Admin Dashboard.
-    Shows system statistics, user management, attack simulator controls,
-    and cryptographic operation logs.
-    """
-    # Check if user is admin (specialist users can access for demo)
+@app.route('/profile/edit', methods=['GET', 'POST'])
+def edit_profile():
+    """Edit profile page (protected route)"""
     if 'user_id' not in session:
         return redirect(url_for('login'))
     
-    user = User.query.get(session.get('user_id'))
+    user_id = session.get('user_id')
+    user = User.query.get(user_id)
     
-    # Allow specialist or admins
-    if not user or user.role not in ['specialist', 'admin']:
-        return redirect(url_for('dashboard'))
+    if not user:
+        session.clear()
+        return redirect(url_for('login'))
     
-    # Get statistics
-    total_users = User.query.count()
-    total_messages = Message.query.count()
-    total_referrals = Referral.query.count()
-    
-    # Get recent events from system log
-    recent_events = system_log[-20:]  # Last 20 events
-    
-    # Get all users for attack simulator
-    users = User.query.all()
-    
-    return render_template('admin_dashboard.html',
-                         user=user,
-                         total_users=total_users,
-                         total_messages=total_messages,
-                         total_referrals=total_referrals,
-                         system_log=recent_events,
-                         all_users=users)
-
-
-@app.route('/admin/simulate-attack/<int:message_id>', methods=['POST'])
-def simulate_attack(message_id):
-    """
-    Attack Simulator - Demonstrates HMAC Integrity Protection.
-    
-    Simulates a bit-flipping attack on an encrypted message:
-    1. Finds the message by ID
-    2. Modifies one random bit in the encrypted_content
-    3. Keeps the mac_tag unchanged (to prove HMAC will catch it)
-    4. Next view: HMAC verification fails → shows "Integrity Breach" alert
-    5. Notifies admin dashboard and specialist users
-    
-    This demonstrates why HMAC protection is critical for security.
-    """
-    if 'user_id' not in session:
-        return jsonify({'error': 'Not authenticated'}), 401
-    
-    user = User.query.get(session.get('user_id'))
-    if not user or user.role != 'specialist':
-        return jsonify({'error': 'Unauthorized'}), 403
-    
-    message = Message.query.get(message_id)
-    if not message:
-        return jsonify({'error': 'Message not found'}), 404
-    
-    try:
-        # Extract hex content
-        if message.encrypted_content.startswith('ecc:'):
-            hex_content = message.encrypted_content[4:]
-        else:
-            hex_content = message.encrypted_content
+    if request.method == 'POST':
+        # Get form data
+        display_name = request.form.get('display_name')
+        phone = request.form.get('phone')
+        date_of_birth = request.form.get('date_of_birth')
+        address = request.form.get('address')
+        city = request.form.get('city')
+        country = request.form.get('country')
         
-        # Convert to integer and flip a random bit
-        content_int = int(hex_content, 16)
-        bit_position = random.randint(0, 63)  # Random bit to flip
-        tampered_int = content_int ^ (1 << bit_position)  # Flip the bit
+        # Update user profile with encrypted sensitive data
+        if display_name:
+            user.display_name = display_name
+        if phone:
+            user.phone = user.encrypt_nid_with_rsa(phone) if hasattr(user, 'encrypt_nid_with_rsa') else phone
+        if date_of_birth:
+            user.date_of_birth = user.encrypt_nid_with_rsa(date_of_birth) if hasattr(user, 'encrypt_nid_with_rsa') else date_of_birth
+        if address:
+            user.address = user.encrypt_nid_with_rsa(address) if hasattr(user, 'encrypt_nid_with_rsa') else address
+        if city:
+            user.city = city
+        if country:
+            user.country = country
         
-        # Convert back to hex
-        tampered_hex = hex(tampered_int)[2:].zfill(len(hex_content))
-        
-        # Keep the old content and store tampered version
-        message.encrypted_content = f"ecc:{tampered_hex}" if message.encrypted_content.startswith('ecc:') else tampered_hex
-        message.is_verified = False  # Mark as unverified (will fail HMAC check)
-        
-        # Add integrity breach flag
-        message.integrity_breach = True  # Custom attribute for demo
-        
-        db.session.commit()
-        
-        # Log the attack simulation
-        log_msg = f"ATTACK SIMULATOR: Bit-flip attack on Message ID {message_id} | Bit position: {bit_position} | Will fail HMAC verification"
-        add_system_log(log_msg, "ALERT")
-        add_system_log(f"⚠ Integrity Breach Alert: Message {message_id} corrupted by attacker simulation | HMAC will catch this tampering", "ALERT")
-        
-        return jsonify({
-            'success': True,
-            'message': 'Attack simulated - Message corrupted',
-            'bit_flipped': bit_position,
-            'next_verification': 'Will fail HMAC check'
-        })
+        try:
+            db.session.commit()
+            # Update session with new display name
+            session['user_name'] = user.display_name or user.username
+            # Prepare decrypted user data for display
+            user_profile = {
+                'id': user.id,
+                'username': user.username,
+                'display_name': user.display_name,
+                'role': user.role,
+                'phone': user.get_phone(),
+                'address': user.get_address(),
+                'date_of_birth': user.get_date_of_birth(),
+                'email': user.get_email(),
+                'city': user.city,
+                'country': user.country,
+                'created_at': user.created_at,
+                'updated_at': user.updated_at,
+                'rsa_keys': 'Generated' if user.rsa_public_key else 'Not Generated',
+                'ecc_keys': 'Generated' if user.ecc_public_key else 'Not Generated'
+            }
+            return render_template('profile.html', user=user, user_profile=user_profile, success='Profile updated successfully!')
+        except Exception as e:
+            db.session.rollback()
+            return render_template('edit_profile.html', user=user, error=f'Error updating profile: {str(e)}')
     
-    except Exception as e:
-        add_system_log(f"❌ ATTACK SIMULATION FAILED: {str(e)}", "ERROR")
-        return jsonify({'error': str(e)}), 500
+    # Prepare decrypted user data for the edit form
+    user_profile = {
+        'id': user.id,
+        'username': user.username,
+        'display_name': user.display_name,
+        'role': user.role,
+        'phone': user.get_phone(),
+        'address': user.get_address(),
+        'date_of_birth': user.get_date_of_birth(),
+        'email': user.get_email(),
+        'city': user.city,
+        'country': user.country,
+        'created_at': user.created_at,
+        'updated_at': user.updated_at,
+        'rsa_keys': 'Generated' if user.rsa_public_key else 'Not Generated',
+        'ecc_keys': 'Generated' if user.ecc_public_key else 'Not Generated'
+    }
+    
+    return render_template('edit_profile.html', user=user, user_profile=user_profile)
 
 
 # ==================== CRYPTOGRAPHIC ROUTES ====================
@@ -989,6 +900,7 @@ def init_sample_data():
     # Create sample users with cryptographic keys
     patient = User(
         username='patient@medlink.com',
+        display_name='Patient User',
         role='patient',
         public_key='mock_patient_public_key',
         encrypted_profile='encrypted_patient_profile'
@@ -1011,6 +923,7 @@ def init_sample_data():
     
     doctor = User(
         username='doctor@medlink.com',
+        display_name='Dr. Doctor',
         role='doctor',
         public_key='mock_doctor_public_key',
         encrypted_profile='encrypted_doctor_profile'
@@ -1033,6 +946,7 @@ def init_sample_data():
     
     specialist = User(
         username='specialist@medlink.com',
+        display_name='Dr. Specialist',
         role='specialist',
         public_key='mock_specialist_public_key',
         encrypted_profile='encrypted_specialist_profile'
@@ -1284,62 +1198,6 @@ def rotate_keys():
                          current_rsa_e=rsa_key.get('e') if rsa_key else 'None',
                          current_rsa_n_preview=str(rsa_key.get('n'))[:50] + '...' if rsa_key else 'None')
 
-
-@app.route('/2fa/verify', methods=['POST'])
-def verify_2fa():
-    """
-    Two-Factor Authentication (2FA) - Step 2.
-    Uses cryptographic challenge-response.
-    
-    Algorithm:
-    1. After password login (Step 1), user receives challenge
-    2. Challenge: random 32-byte value
-    3. User must sign challenge with their private key
-    4. Server verifies signature with public key
-    5. If verified, grant full session access
-    
-    Requirement: "verification function must enforce two-step authentication"
-    """
-    try:
-        challenge = request.form.get('challenge')
-        signature = request.form.get('signature')
-        
-        # For demo, use a simple verification
-        # In production, would use RSA signature verification
-        user_id = session.get('temp_user_id')
-        
-        if not user_id:
-            add_system_log("2FA verification failed: No temp session", "ALERT")
-            return jsonify({'error': '2FA session expired'}), 401
-        
-        # Simple verification for demo (in production use real RSA signature verification)
-        if signature == f"signed_{challenge}":
-            # Upgrade to full session
-            user = User.query.get(user_id)
-            session['user_id'] = user.id
-            session['user_email'] = user.username
-            session['user_role'] = user.role
-            session['user_name'] = user.get_display_name()
-            session.pop('temp_user_id', None)
-            session.pop('temp_challenge', None)
-            
-            add_system_log(
-                f"✓ 2FA SUCCESSFUL: {user.get_display_name()} | Full session access granted",
-                "SUCCESS"
-            )
-            
-            return jsonify({
-                'success': True,
-                'message': 'Two-factor authentication successful',
-                'redirect': '/dashboard'
-            }), 200
-        
-        add_system_log("2FA verification failed: Invalid signature", "ALERT")
-        return jsonify({'error': 'Invalid 2FA signature'}), 401
-    
-    except Exception as e:
-        add_system_log(f"2FA verification error: {str(e)}", "ERROR")
-        return jsonify({'error': str(e)}), 500
 
 
 @app.route('/admin/attack-simulator')

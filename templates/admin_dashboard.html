@@ -3,234 +3,199 @@
 {% block title %}Admin Dashboard - MedLink{% endblock %}
 
 {% block content %}
-<div class="min-h-screen bg-slate-50" style="background-color: #F8FAFC;">
-    <div class="flex">
-        <!-- Sidebar -->
-        <div class="w-64 bg-white border-r border-slate-200 min-h-screen sticky top-0">
-            <div class="p-6">
-                <div class="flex items-center space-x-2 mb-8">
-                    <div class="w-10 h-10 bg-gradient-to-br from-cyan-500 to-teal-600 rounded-lg flex items-center justify-center">
-                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path>
+<div class="min-h-screen bg-slate-900">
+    <!-- Header -->
+    <div class="bg-gradient-to-r from-slate-800 to-slate-900 border-b border-slate-700 sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h1 class="text-3xl font-bold text-white flex items-center gap-3">
+                        🛡️ Admin Dashboard
+                    </h1>
+                    <p class="text-slate-400 mt-1">System Management & Attack Simulator</p>
+                </div>
+                <div class="text-right">
+                    <p class="text-sm text-slate-300">Logged in as: <span class="font-semibold text-cyan-400">{{ user.get_display_name() }}</span></p>
+                    <p class="text-xs text-slate-500 mt-1">Role: <span class="font-mono">{{ user.role }}</span></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Statistics Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <!-- Total Users -->
+            <div class="bg-slate-800 border border-slate-700 rounded-lg p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-slate-400 text-sm font-medium mb-2">Total Users</p>
+                        <p class="text-3xl font-bold text-white">{{ total_users }}</p>
+                    </div>
+                    <div class="w-12 h-12 rounded-lg bg-blue-500/20 flex items-center justify-center">
+                        <svg class="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 12H9m4 8H8m8 0h.01M9 3h6"></path>
                         </svg>
                     </div>
+                </div>
+            </div>
+
+            <!-- Encrypted Messages -->
+            <div class="bg-slate-800 border border-slate-700 rounded-lg p-6">
+                <div class="flex items-center justify-between">
                     <div>
-                        <p class="text-lg font-bold text-slate-900">MedLink</p>
-                        <p class="text-xs text-slate-600">Admin Panel</p>
+                        <p class="text-slate-400 text-sm font-medium mb-2">Encrypted Messages</p>
+                        <p class="text-3xl font-bold text-white">{{ total_messages }}</p>
+                    </div>
+                    <div class="w-12 h-12 rounded-lg bg-green-500/20 flex items-center justify-center">
+                        <svg class="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                        </svg>
                     </div>
                 </div>
+            </div>
 
-                <!-- Admin Info -->
-                <div class="p-4 bg-cyan-50 border border-cyan-200 rounded-lg mb-6">
-                    <p class="text-xs font-semibold text-cyan-900 mb-2">LOGGED IN AS</p>
-                    <p class="text-sm font-bold text-slate-900">{{ user.get_display_name() }}</p>
-                    <p class="text-xs text-slate-600 mt-1">Role: {{ user.role.capitalize() }}</p>
+            <!-- Signed Referrals -->
+            <div class="bg-slate-800 border border-slate-700 rounded-lg p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-slate-400 text-sm font-medium mb-2">Signed Referrals</p>
+                        <p class="text-3xl font-bold text-white">{{ total_referrals }}</p>
+                    </div>
+                    <div class="w-12 h-12 rounded-lg bg-yellow-500/20 flex items-center justify-center">
+                        <svg class="w-6 h-6 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
                 </div>
-
-                <!-- Navigation -->
-                <nav class="space-y-2">
-                    <a href="{{ url_for('dashboard') }}" class="w-full text-left px-4 py-2 text-slate-700 hover:bg-slate-100 rounded-lg transition">
-                        ← Back to Dashboard
-                    </a>
-                </nav>
             </div>
         </div>
 
-        <!-- Main Content -->
-        <div class="flex-1 overflow-auto">
-            <!-- Header -->
-            <div class="bg-white border-b border-slate-200 sticky top-0 z-10">
-                <div class="px-8 py-6">
-                    <h1 class="text-3xl font-bold text-slate-900" style="font-family: 'Plus Jakarta Sans', sans-serif;">
-                        🛡️ Admin Dashboard
-                    </h1>
-                    <p class="text-slate-600 mt-1">System Management & Security Controls</p>
-                </div>
+        <!-- Attack Simulator Section -->
+        <div class="bg-slate-800 border border-slate-700 rounded-lg p-6 mb-8">
+            <h2 class="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                ⚡ Attack Simulator (Educational)
+            </h2>
+            <p class="text-slate-400 text-sm mb-4">
+                Simulate HMAC tampering attacks to demonstrate integrity protection. Click "Simulate Attack" on any message to corrupt it and trigger HMAC verification failure on next view.
+            </p>
+            <div class="bg-red-500/10 border border-red-500/30 rounded p-3 mb-4">
+                <p class="text-xs text-red-300">
+                    ⚠️ Educational Use Only: This simulates real attacks to prove HMAC protects against tampering
+                </p>
             </div>
 
-            <!-- Content -->
-            <div class="p-8">
-                <!-- Statistics Grid -->
-                <div class="grid md:grid-cols-3 gap-6 mb-8">
-                    <!-- Total Users -->
-                    <div class="card-elevated bg-white rounded-2xl p-6">
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <p class="text-sm text-slate-600 font-medium mb-2">Total Users</p>
-                                <p class="text-4xl font-bold text-slate-900">{{ total_users }}</p>
-                            </div>
-                            <div class="w-12 h-12 rounded-lg bg-blue-100 flex items-center justify-center">
-                                <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-2a6 6 0 0112 0v2zm0 0h6v-2a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
-                                </svg>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Total Messages -->
-                    <div class="card-elevated bg-white rounded-2xl p-6">
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <p class="text-sm text-slate-600 font-medium mb-2">Encrypted Messages</p>
-                                <p class="text-4xl font-bold text-slate-900">{{ total_messages }}</p>
-                            </div>
-                            <div class="w-12 h-12 rounded-lg bg-cyan-100 flex items-center justify-center">
-                                <svg class="w-6 h-6 text-cyan-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
-                                </svg>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Total Referrals -->
-                    <div class="card-elevated bg-white rounded-2xl p-6">
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <p class="text-sm text-slate-600 font-medium mb-2">Signed Referrals</p>
-                                <p class="text-4xl font-bold text-slate-900">{{ total_referrals }}</p>
-                            </div>
-                            <div class="w-12 h-12 rounded-lg bg-teal-100 flex items-center justify-center">
-                                <svg class="w-6 h-6 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                </svg>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Attack Simulator Section -->
-                <div class="card-elevated bg-white rounded-2xl p-8 mb-8">
-                    <h2 class="text-2xl font-bold text-slate-900 mb-6" style="font-family: 'Plus Jakarta Sans', sans-serif;">
-                        🎯 Attack Simulator
-                    </h2>
-                    <p class="text-slate-600 mb-6">
-                        Demonstrate HMAC integrity protection by simulating a bit-flipping attack on messages.
-                        The attack will corrupt the message, and HMAC verification will catch the tampering.
-                    </p>
-
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-sm">
-                            <thead>
-                                <tr class="border-b border-slate-200">
-                                    <th class="text-left py-3 px-4 font-semibold text-slate-900">Message ID</th>
-                                    <th class="text-left py-3 px-4 font-semibold text-slate-900">From</th>
-                                    <th class="text-left py-3 px-4 font-semibold text-slate-900">To</th>
-                                    <th class="text-left py-3 px-4 font-semibold text-slate-900">Status</th>
-                                    <th class="text-left py-3 px-4 font-semibold text-slate-900">Action</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% if all_users and all_users|length > 0 %}
-                                    {% for msg in all_users[:5] %}
-                                    <tr class="border-b border-slate-100 hover:bg-slate-50">
-                                        <td class="py-3 px-4">{{ msg.id }}</td>
-                                        <td class="py-3 px-4">
-                                            <span class="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs">
-                                                {{ msg.get_display_name()[:20] }}
-                                            </span>
-                                        </td>
-                                        <td class="py-3 px-4">{{ msg.username[:15] }}</td>
-                                        <td class="py-3 px-4">
-                                            <span class="px-2 py-1 bg-green-100 text-green-800 rounded text-xs">
-                                                Active
-                                            </span>
-                                        </td>
-                                        <td class="py-3 px-4">
-                                            <button class="px-3 py-1 bg-red-500 hover:bg-red-600 text-white text-xs rounded-lg transition" 
-                                                    onclick="simulateAttack({{ msg.id }})">
-                                                Simulate Attack
-                                            </button>
-                                        </td>
-                                    </tr>
-                                    {% endfor %}
-                                {% else %}
-                                    <tr>
-                                        <td colspan="5" class="py-4 px-4 text-center text-slate-600">
-                                            No messages available for attack simulation
-                                        </td>
-                                    </tr>
-                                {% endif %}
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <div class="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-                        <p class="text-xs text-red-900">
-                            ⚠️ <span class="font-semibold">Educational Use Only:</span> This simulator demonstrates how HMAC protects against tampering.
-                            When an attack is simulated, the message will be corrupted and HMAC verification will fail on next view.
-                        </p>
-                    </div>
-                </div>
-
-                <!-- System Log -->
-                <div class="card-elevated bg-white rounded-2xl p-8">
-                    <h2 class="text-2xl font-bold text-slate-900 mb-6" style="font-family: 'Plus Jakarta Sans', sans-serif;">
-                        📋 System Log
-                    </h2>
-                    <p class="text-slate-600 mb-4">
-                        Real-time cryptographic operations and security events (last 20 events):
-                    </p>
-
-                    <div class="bg-slate-900 rounded-lg p-4 font-mono text-xs text-green-400 max-h-96 overflow-y-auto" style="background: #1a1a1a;">
-                        {% if system_log %}
-                            {% for log_entry in system_log %}
-                            <div class="mb-2 whitespace-pre-wrap break-words">
-                                {% if "[SUCCESS]" in log_entry %}
-                                    <span class="text-green-400">{{ log_entry }}</span>
-                                {% elif "[ERROR]" in log_entry %}
-                                    <span class="text-red-400">{{ log_entry }}</span>
-                                {% elif "[ALERT]" in log_entry %}
-                                    <span class="text-yellow-400">{{ log_entry }}</span>
-                                {% else %}
-                                    <span class="text-slate-400">{{ log_entry }}</span>
-                                {% endif %}
-                            </div>
+            <!-- Messages Table for Attack Simulation -->
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="border-b border-slate-700">
+                            <th class="text-left text-slate-300 font-semibold py-2 px-3">Message ID</th>
+                            <th class="text-left text-slate-300 font-semibold py-2 px-3">From</th>
+                            <th class="text-left text-slate-300 font-semibold py-2 px-3">To</th>
+                            <th class="text-left text-slate-300 font-semibold py-2 px-3">Status</th>
+                            <th class="text-left text-slate-300 font-semibold py-2 px-3">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if all_users %}
+                            {% for user_item in all_users %}
+                            <tr class="border-b border-slate-700/50 hover:bg-slate-700/30 transition">
+                                <td class="py-2 px-3 text-slate-400 font-mono text-xs">#{{ user_item.id }}</td>
+                                <td class="py-2 px-3 text-slate-300">{{ user_item.get_display_name() }}</td>
+                                <td class="py-2 px-3 text-slate-300">Specialist</td>
+                                <td class="py-2 px-3">
+                                    <span class="px-2 py-1 bg-green-500/20 text-green-300 rounded text-xs font-semibold">Verified</span>
+                                </td>
+                                <td class="py-2 px-3">
+                                    <button onclick="simulateAttack({{ user_item.id }})" class="px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-xs font-semibold rounded transition">
+                                        Simulate Attack
+                                    </button>
+                                </td>
+                            </tr>
                             {% endfor %}
                         {% else %}
-                            <div class="text-slate-500">No system events logged yet</div>
+                        <tr>
+                            <td colspan="5" class="py-4 px-3 text-center text-slate-500">No users available</td>
+                        </tr>
                         {% endif %}
-                    </div>
+                    </tbody>
+                </table>
+            </div>
+        </div>
 
-                    <button class="mt-4 px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-900 rounded-lg text-sm font-medium transition" 
-                            onclick="location.reload()">
-                        🔄 Refresh Log
-                    </button>
+        <!-- System Log Console -->
+        <div class="bg-slate-800 border border-slate-700 rounded-lg p-6">
+            <h2 class="text-xl font-bold text-white mb-4 flex items-center justify-between">
+                <span class="flex items-center gap-2">📋 System Log Console</span>
+                <button onclick="location.reload()" class="px-3 py-1 bg-slate-700 hover:bg-slate-600 text-white text-xs font-semibold rounded transition">
+                    Refresh
+                </button>
+            </h2>
+
+            <!-- Log Display -->
+            <div id="logConsole" class="bg-black rounded p-4 h-96 overflow-y-auto font-mono text-sm" style="background-color: #1a1a1a;">
+                {% for event in system_log %}
+                <div class="py-1" style="color: {% if '[SUCCESS]' in event %}#10b981{% elif '[ERROR]' in event %}#ef4444{% elif '[ALERT]' in event %}#f59e0b{% else %}#94a3b8{% endif %};">
+                    {{ event }}
+                </div>
+                {% endfor %}
+                <div class="text-slate-500 text-xs mt-4">
+                    Total events logged: {{ system_log|length }}
                 </div>
             </div>
+        </div>
+
+        <!-- Back to Dashboard -->
+        <div class="mt-8 text-center">
+            <a href="{{ url_for('dashboard') }}" class="px-6 py-2 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg font-semibold transition">
+                ← Back to Dashboard
+            </a>
         </div>
     </div>
 </div>
 
 <script>
-    function simulateAttack(messageId) {
-        if (!confirm('Simulate bit-flipping attack on this message? It will fail HMAC verification.')) {
-            return;
-        }
-
-        fetch(`/admin/simulate-attack/${messageId}`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                alert('✓ Attack simulated!\nMessage ID ' + messageId + ' corrupted.\nBit flipped at position: ' + data.bit_flipped + '\nHMAC will catch this tampering.');
-                location.reload();
-            } else {
-                alert('Error: ' + data.error);
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Failed to simulate attack');
-        });
+async function simulateAttack(userId) {
+    if (!confirm(`🔴 Simulate HMAC tampering attack on message #${userId}?\n\nThis will corrupt the message data and trigger integrity failure on next view.`)) {
+        return;
     }
+    
+    try {
+        const response = await fetch(`{{ url_for("simulate_attack", message_id=0) }}`.replace('/0', '/' + userId), {
+            method: 'POST'
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            alert(`✓ Attack Executed!\n\n${data.message}\n\nBit position flipped: ${data.bit_flipped}\n\nNext access will fail HMAC verification!`);
+            location.reload();
+        } else {
+            alert('Error simulating attack');
+        }
+    } catch (error) {
+        alert(`Error: ${error.message}`);
+    }
+}
 
-    // Auto-refresh log every 5 seconds
-    setInterval(function() {
-        location.reload();
-    }, 5000);
+// Auto-refresh log every 5 seconds
+setInterval(function() {
+    fetch('{{ url_for("get_system_log") }}')
+        .then(r => r.json())
+        .then(data => {
+            const console = document.getElementById('logConsole');
+            if (console) {
+                console.innerHTML = data.log.map(event => {
+                    let color = '#94a3b8';
+                    if (event.includes('[SUCCESS]')) color = '#10b981';
+                    else if (event.includes('[ERROR]')) color = '#ef4444';
+                    else if (event.includes('[ALERT]')) color = '#f59e0b';
+                    return `<div style="color: ${color};">${event}</div>`;
+                }).join('');
+            }
+        })
+        .catch(err => console.log('Auto-refresh paused'));
+}, 5000);
 </script>
 {% endblock %}

@@ -28,18 +28,30 @@ class User(db.Model):
     # Legacy field (kept for compatibility)
     public_key = db.Column(db.Text, nullable=True)  # For encryption purposes
     encrypted_profile = db.Column(db.Text, nullable=True)  # Encrypted email/NID
+    
+    # User Profile Fields
+    display_name = db.Column(db.String(120), nullable=True)
+    phone = db.Column(db.Text, nullable=True)  # Encrypted
+    date_of_birth = db.Column(db.String(20), nullable=True)
+    address = db.Column(db.Text, nullable=True)  # Encrypted
+    city = db.Column(db.String(100), nullable=True)
+    country = db.Column(db.String(100), nullable=True)
+    
+    # 2FA Fields
+    two_fa_enabled = db.Column(db.Boolean, default=False)
+    two_fa_challenge = db.Column(db.String(10), nullable=True)
+    two_fa_timestamp = db.Column(db.DateTime, nullable=True)
+    
+    # NID and Blood Group Encryption
+    encrypted_nid = db.Column(db.Text, nullable=True)
+    encrypted_blood_group = db.Column(db.Text, nullable=True)
+    nid_mac = db.Column(db.String(255), nullable=True)
+    
+    # Key Management
+    last_key_rotation = db.Column(db.DateTime, nullable=True)
+    
     created_at = db.Column(db.DateTime, default=datetime.now)
     updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
-    
-    # 2FA & Security Fields
-    two_fa_enabled = db.Column(db.Boolean, default=False)  # Is 2FA enabled for this user
-    two_fa_challenge = db.Column(db.Text, nullable=True)  # JSON: {"number": str, "signed_hash": str, "timestamp": datetime}
-    last_key_rotation = db.Column(db.DateTime, nullable=True)  # When keys were last rotated
-    
-    # Patient NID - Encrypted with Direct RSA (Strict Asymmetric: m^e mod N)
-    encrypted_nid = db.Column(db.Text, nullable=True)  # RSA encrypted NID (hex format)
-    encrypted_blood_group = db.Column(db.Text, nullable=True)  # RSA encrypted blood group
-    nid_mac = db.Column(db.String(255), nullable=True)  # HMAC for NID integrity
     
     # Relationships
     sent_referrals = db.relationship('Referral', foreign_keys='Referral.sender_id', backref='sender', lazy=True)
@@ -81,7 +93,11 @@ class User(db.Model):
         return verify_password(password, self.password_hash)
     
     def get_display_name(self):
-        """Get display name based on role and username"""
+        """Get display name - return stored display_name if available, otherwise generate from username"""
+        if self.display_name:
+            return self.display_name
+        
+        # Fallback: Generate from username
         role_prefixes = {
             'doctor': 'Dr. ',
             'specialist': 'Dr. ',
@@ -125,82 +141,127 @@ class User(db.Model):
         self.ecc_public_key = json.dumps({"x": public_point.x, "y": public_point.y})
         self.ecc_private_key = json.dumps({"k": private_scalar})
     
-    def encrypt_nid_with_rsa(self, nid_value):
+    def encrypt_nid_with_rsa(self, data):
         """
-        Encrypt Patient NID using Direct RSA (Strict Asymmetric).
-        
-        Algorithm (Strict Asymmetric - No XOR):
-        - Direct modular exponentiation: ciphertext = nid^e mod N
-        - Uses RSA public key (e, N)
-        - No symmetric cipher involved
-        - Pure asymmetric encryption as per lab requirement
+        Encrypt sensitive data using user's RSA public key.
         
         Args:
-            nid_value: The NID to encrypt (string or number)
-        
+            data: String to encrypt
+            
         Returns:
-            Encrypted NID as hex string with "rsa:" prefix
+            str: Hex-encoded encrypted data
         """
-        from security.rsa import encrypt
-        from security.hashing import generate_mac
+        if not self.rsa_public_key:
+            return data  # Return plaintext if no key
         
-        rsa_pub = self.get_rsa_public_key()
-        if not rsa_pub:
-            return None
-        
-        # Convert NID to integer for encryption
         try:
-            nid_int = int(''.join(filter(str.isdigit, str(nid_value))))
-        except:
-            nid_int = hash(str(nid_value)) % (rsa_pub['n'] - 1)
+            from security.rsa import encrypt
+            pub_key = self.get_rsa_public_key()
+            if pub_key:
+                # Convert string data to integer
+                if data.isdigit():
+                    message_int = int(data)
+                else:
+                    message_int = int(data.encode('utf-8').hex(), 16)
+                
+                # Encrypt using RSA
+                encrypted_int = encrypt(message_int, (pub_key['e'], pub_key['n']))
+                return hex(encrypted_int)[2:]
+        except Exception as e:
+            pass
         
-        # Direct RSA encryption (m^e mod N)
-        encrypted_int = encrypt(nid_int, rsa_pub)
-        encrypted_hex = hex(encrypted_int)[2:]  # Remove '0x' prefix
-        
-        # Store with HMAC for integrity
-        self.encrypted_nid = f"rsa:{encrypted_hex}"
-        self.nid_mac = generate_mac(f"nid_{self.id}", self.encrypted_nid)
-        
-        return self.encrypted_nid
+        return data
     
     def decrypt_nid_with_rsa(self):
         """
-        Decrypt Patient NID using Direct RSA.
-        
-        Algorithm:
-        - Direct modular exponentiation: plaintext = ciphertext^d mod N
-        - Uses RSA private key (d, N)
-        - Verifies HMAC before decryption
+        Decrypt encrypted NID using user's RSA private key.
         
         Returns:
-            Decrypted NID value or None if decryption fails
+            str: Decrypted NID or None
         """
-        from security.rsa import decrypt
-        from security.hashing import verify_mac
-        
-        if not self.encrypted_nid or not self.nid_mac:
-            return None
-        
-        # Verify HMAC integrity first
-        if not verify_mac(f"nid_{self.id}", self.encrypted_nid, self.nid_mac):
-            return None  # Integrity check failed
-        
-        rsa_priv = self.get_rsa_private_key()
-        if not rsa_priv:
+        if not self.encrypted_nid or not self.rsa_private_key:
             return None
         
         try:
-            # Extract hex value (remove "rsa:" prefix)
-            encrypted_hex = self.encrypted_nid.replace("rsa:", "")
-            encrypted_int = int(encrypted_hex, 16)
+            from security.rsa import decrypt
+            priv_key = self.get_rsa_private_key()
+            if priv_key:
+                encrypted_int = int(self.encrypted_nid, 16)
+                decrypted_int = decrypt(encrypted_int, (priv_key['d'], priv_key['n']))
+                return str(decrypted_int)
+        except Exception as e:
+            pass
+        
+        return None
+    
+    def decrypt_field(self, encrypted_data):
+        """
+        Generic decryption method for any encrypted field.
+        
+        Args:
+            encrypted_data: Hex-encoded encrypted data
             
-            # Direct RSA decryption (c^d mod N)
-            decrypted_int = decrypt(encrypted_int, rsa_priv)
-            
-            return str(decrypted_int)
-        except:
+        Returns:
+            str: Decrypted data or None
+        """
+        if not encrypted_data or not self.rsa_private_key:
             return None
+        
+        try:
+            from security.rsa import decrypt
+            priv_key = self.get_rsa_private_key()
+            if priv_key:
+                encrypted_int = int(encrypted_data, 16)
+                decrypted_int = decrypt(encrypted_int, (priv_key['d'], priv_key['n']))
+                # Try to convert from hex if it looks like hex-encoded string
+                try:
+                    hex_str = hex(decrypted_int)[2:]
+                    # Handle odd-length hex strings
+                    if len(hex_str) % 2:
+                        hex_str = '0' + hex_str
+                    return bytes.fromhex(hex_str).decode('utf-8', errors='ignore')
+                except:
+                    return str(decrypted_int)
+        except Exception as e:
+            pass
+        
+        return None
+    
+    def get_phone(self):
+        """Get decrypted phone number"""
+        if not self.phone:
+            return None
+        # If it looks like encrypted data (hex), decrypt it
+        if self.phone and len(self.phone) > 20 and all(c in '0123456789abcdef' for c in self.phone.lower()):
+            return self.decrypt_field(self.phone)
+        return self.phone
+    
+    def get_address(self):
+        """Get decrypted address"""
+        if not self.address:
+            return None
+        # If it looks like encrypted data (hex), decrypt it
+        if self.address and len(self.address) > 20 and all(c in '0123456789abcdef' for c in self.address.lower()):
+            return self.decrypt_field(self.address)
+        return self.address
+    
+    def get_date_of_birth(self):
+        """Get decrypted date of birth"""
+        if not self.date_of_birth:
+            return None
+        # If it looks like encrypted data (hex), decrypt it
+        if self.date_of_birth and len(self.date_of_birth) > 20 and all(c in '0123456789abcdef' for c in self.date_of_birth.lower()):
+            return self.decrypt_field(self.date_of_birth)
+        return self.date_of_birth
+    
+    def get_email(self):
+        """Get decrypted email"""
+        if not self.encrypted_email:
+            return None
+        # If it looks like encrypted data (hex), decrypt it
+        if self.encrypted_email and len(self.encrypted_email) > 20 and all(c in '0123456789abcdef' for c in self.encrypted_email.lower()):
+            return self.decrypt_field(self.encrypted_email)
+        return self.encrypted_email
     
     def __repr__(self):
         return f'<User {self.username}>'

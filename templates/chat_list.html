@@ -84,57 +84,178 @@
 
             <!-- Chat List -->
             <div class="px-8 py-8">
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {% for user in available_users %}
-                    <a href="{{ url_for('chat', user_id=user.id) }}" class="card-elevated bg-white rounded-2xl p-6 hover:shadow-lg transition cursor-pointer group">
-                        <div class="flex items-start justify-between mb-4">
-                            <div class="flex items-center space-x-4 flex-1">
-                                <div class="w-12 h-12 rounded-full bg-gradient-to-br from-cyan-500 to-teal-600 flex items-center justify-center text-white font-bold text-lg">
-                                    {{ user.username[0].upper() }}
-                                </div>
-                                <div>
-                                    <h3 class="font-semibold text-slate-900 group-hover:text-cyan-600 transition">{{ user.username }}</h3>
-                                    <p class="text-xs text-slate-600">{{ user.role.capitalize() }}</p>
-                                </div>
-                            </div>
-                            <svg class="w-5 h-5 text-slate-400 group-hover:text-cyan-600 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-                            </svg>
-                        </div>
-
-                        <!-- Encrypted indicator -->
-                        <div class="flex items-center space-x-2 text-xs text-green-600 bg-green-50 rounded-lg px-3 py-2">
-                            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"></path>
-                            </svg>
-                            <span>🔒 End-to-End Encrypted (ECC + HMAC)</span>
-                        </div>
-
-                        <!-- Status -->
-                        <div class="mt-4 pt-4 border-t border-slate-200">
-                            <p class="text-xs text-slate-600">
-                                <span class="relative flex h-1.5 w-1.5 mt-0.5 inline-block mr-2">
-                                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                                    <span class="relative inline-flex rounded-full h-1.5 w-1.5 bg-green-500"></span>
-                                </span>
-                                Ready to chat
-                            </p>
-                        </div>
-                    </a>
-                    {% endfor %}
+                <!-- Search Bar -->
+                <div class="mb-8">
+                    <div class="relative">
+                        <input type="text" id="searchUsers" placeholder="Search users to start a new conversation..." class="w-full px-4 py-3 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 text-slate-900 placeholder-slate-500">
+                        <svg class="absolute right-4 top-3.5 w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                        </svg>
+                    </div>
                 </div>
 
-                {% if not available_users %}
-                <div class="card-elevated bg-white rounded-2xl p-12 text-center">
+                <!-- Active Conversations Section -->
+                {% if active_users %}
+                <div class="mb-8">
+                    <h2 class="text-xl font-bold text-slate-900 mb-4 px-2">💬 Your Conversations</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="activeConversations">
+                        {% for user in active_users %}
+                        <a href="{{ url_for('chat', user_id=user.id) }}" class="card-elevated bg-white rounded-2xl p-6 hover:shadow-lg transition cursor-pointer group">
+                            <div class="flex items-start justify-between mb-4">
+                                <div class="flex items-center space-x-4 flex-1">
+                                    <div class="w-12 h-12 rounded-full bg-gradient-to-br from-cyan-500 to-teal-600 flex items-center justify-center text-white font-bold text-lg">
+                                        {{ user.username[0].upper() }}
+                                    </div>
+                                    <div>
+                                        <h3 class="font-semibold text-slate-900 group-hover:text-cyan-600 transition">{{ user.username }}</h3>
+                                        <p class="text-xs text-slate-600">{{ user.role.capitalize() }}</p>
+                                    </div>
+                                </div>
+                                <svg class="w-5 h-5 text-slate-400 group-hover:text-cyan-600 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                                </svg>
+                            </div>
+
+                            <!-- Encrypted indicator -->
+                            <div class="flex items-center space-x-2 text-xs text-green-600 bg-green-50 rounded-lg px-3 py-2">
+                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"></path>
+                                </svg>
+                                <span>🔒 End-to-End Encrypted (ECC + HMAC)</span>
+                            </div>
+
+                            <!-- Status and Message Count -->
+                            <div class="mt-4 pt-4 border-t border-slate-200 flex items-center justify-between">
+                                <p class="text-xs text-slate-600">
+                                    <span class="relative flex h-1.5 w-1.5 mt-0.5 inline-block mr-2">
+                                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                                        <span class="relative inline-flex rounded-full h-1.5 w-1.5 bg-green-500"></span>
+                                    </span>
+                                    Ready to chat
+                                </p>
+                                {% if user.message_count > 0 %}
+                                <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold text-white bg-red-500 animate-pulse">
+                                    {% if user.message_count == 1 %}
+                                        {{ user.message_count }} new
+                                    {% else %}
+                                        {{ user.message_count }} new
+                                    {% endif %}
+                                </span>
+                                {% endif %}
+                            </div>
+                        </a>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Search Results Section (Hidden by default) -->
+                <div id="searchResults" class="hidden">
+                    <h2 class="text-xl font-bold text-slate-900 mb-4 px-2">🔍 Search Results</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="searchResultsGrid">
+                    </div>
+                </div>
+
+                <!-- No Conversations Message -->
+                {% if not active_users %}
+                <div class="card-elevated bg-white rounded-2xl p-12 text-center mb-8">
                     <svg class="w-16 h-16 mx-auto text-slate-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z"></path>
                     </svg>
                     <h3 class="text-lg font-semibold text-slate-900 mb-2">No conversations yet</h3>
-                    <p class="text-slate-600">Start a conversation by selecting a contact</p>
+                    <p class="text-slate-600">Search for a user above to start a conversation</p>
                 </div>
                 {% endif %}
             </div>
         </div>
     </div>
 </div>
+
+<script>
+// Search functionality
+const searchInput = document.getElementById('searchUsers');
+const searchResults = document.getElementById('searchResults');
+const searchResultsGrid = document.getElementById('searchResultsGrid');
+const activeConversations = document.getElementById('activeConversations');
+
+// All available users passed from backend
+const allUsers = {{ all_users | tojson }};
+const activeUserIds = new Set({{ active_users | map(attribute='id') | list | tojson }});
+
+searchInput.addEventListener('input', (e) => {
+    const query = e.target.value.toLowerCase().trim();
+    
+    if (!query) {
+        // Clear search - show active conversations
+        searchResults.classList.add('hidden');
+        if (activeConversations) {
+            activeConversations.parentElement.classList.remove('hidden');
+        }
+        return;
+    }
+    
+    // Filter users based on query
+    const filtered = allUsers.filter(user => 
+        (user.username.toLowerCase().includes(query) || 
+         user.role.toLowerCase().includes(query)) &&
+        !activeUserIds.has(user.id)  // Exclude users already in active conversations
+    );
+    
+    if (filtered.length > 0) {
+        searchResultsGrid.innerHTML = filtered.map(user => `
+            <a href="/chat/${user.id}" class="card-elevated bg-white rounded-2xl p-6 hover:shadow-lg transition cursor-pointer group">
+                <div class="flex items-start justify-between mb-4">
+                    <div class="flex items-center space-x-4 flex-1">
+                        <div class="w-12 h-12 rounded-full bg-gradient-to-br from-cyan-500 to-teal-600 flex items-center justify-center text-white font-bold text-lg">
+                            ${user.username[0].toUpperCase()}
+                        </div>
+                        <div>
+                            <h3 class="font-semibold text-slate-900 group-hover:text-cyan-600 transition">${user.username}</h3>
+                            <p class="text-xs text-slate-600">${user.role.charAt(0).toUpperCase() + user.role.slice(1)}</p>
+                        </div>
+                    </div>
+                    <svg class="w-5 h-5 text-slate-400 group-hover:text-cyan-600 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                    </svg>
+                </div>
+                <div class="flex items-center space-x-2 text-xs text-green-600 bg-green-50 rounded-lg px-3 py-2">
+                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"></path>
+                    </svg>
+                    <span>🔒 End-to-End Encrypted (ECC + HMAC)</span>
+                </div>
+                <div class="mt-4 pt-4 border-t border-slate-200 flex items-center justify-between">
+                    <p class="text-xs text-slate-600">
+                        <span class="relative flex h-1.5 w-1.5 mt-0.5 inline-block mr-2">
+                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                            <span class="relative inline-flex rounded-full h-1.5 w-1.5 bg-green-500"></span>
+                        </span>
+                        Ready to chat
+                    </p>
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold text-blue-700 bg-blue-100">
+                        New conversation
+                    </span>
+                </div>
+            </a>
+        `).join('');
+        
+        // Hide active conversations, show search results
+        if (activeConversations) {
+            activeConversations.parentElement.classList.add('hidden');
+        }
+        searchResults.classList.remove('hidden');
+    } else {
+        // No results
+        searchResultsGrid.innerHTML = `
+            <div class="col-span-full text-center py-8">
+                <p class="text-slate-500">No users found matching "${query}"</p>
+            </div>
+        `;
+        if (activeConversations) {
+            activeConversations.parentElement.classList.add('hidden');
+        }
+        searchResults.classList.remove('hidden');
+    }
+});
+</script>
 {% endblock %}

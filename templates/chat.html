@@ -111,6 +111,36 @@
 </div>
 
 <script>
+const otherUserId = {{ other_user.id }};
+const messagesArea = document.querySelector('.flex-1.overflow-y-auto');
+let lastMessageCount = {{ messages|length }};
+
+// Auto-refresh messages every 2 seconds for real-time chat
+setInterval(() => {
+    fetch(`/chat/${otherUserId}`)
+        .then(response => response.text())
+        .then(html => {
+            // Extract messages section from the response
+            const parser = new DOMParser();
+            const newDoc = parser.parseFromString(html, 'text/html');
+            const newMessagesArea = newDoc.querySelector('.flex-1.overflow-y-auto');
+            
+            if (newMessagesArea) {
+                // Check if there are new messages
+                const newMessageCount = newMessagesArea.querySelectorAll('[data-message-id]').length || 
+                                       newMessagesArea.innerText.split('\n').filter(l => l.trim()).length;
+                
+                if (newMessageCount > lastMessageCount) {
+                    messagesArea.innerHTML = newMessagesArea.innerHTML;
+                    lastMessageCount = newMessageCount;
+                    // Scroll to bottom
+                    messagesArea.scrollTop = messagesArea.scrollHeight;
+                }
+            }
+        })
+        .catch(error => console.log('Auto-refresh paused'));
+}, 2000);
+
 document.getElementById('messageForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     
@@ -133,8 +163,21 @@ document.getElementById('messageForm').addEventListener('submit', async (e) => {
         
         if (response.ok) {
             messageInput.value = '';
-            // Reload to show new message
-            setTimeout(() => location.reload(), 500);
+            // Refresh immediately to show new message
+            setTimeout(() => {
+                fetch(`/chat/${otherUserId}`)
+                    .then(response => response.text())
+                    .then(html => {
+                        const parser = new DOMParser();
+                        const newDoc = parser.parseFromString(html, 'text/html');
+                        const newMessagesArea = newDoc.querySelector('.flex-1.overflow-y-auto');
+                        if (newMessagesArea) {
+                            messagesArea.innerHTML = newMessagesArea.innerHTML;
+                            // Scroll to bottom
+                            messagesArea.scrollTop = messagesArea.scrollHeight;
+                        }
+                    });
+            }, 300);
         } else {
             alert('Failed to send message');
         }

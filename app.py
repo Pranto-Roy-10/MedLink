@@ -1,4 +1,5 @@
 from flask import Flask, render_template, request, session, redirect, url_for, jsonify
+from flask_socketio import SocketIO, emit, join_room, leave_room
 from datetime import datetime, timedelta
 import os
 import json
@@ -14,6 +15,9 @@ from security.encryption_utils import (
 
 app = Flask(__name__)
 app.secret_key = 'your-secret-key-change-in-production'
+
+# Initialize Socket.IO for real-time chat
+socketio = SocketIO(app, cors_allowed_origins="*")
 
 # SQLite Database Configuration
 basedir = os.path.abspath(os.path.dirname(__file__))
@@ -96,6 +100,9 @@ def verify_2fa():
             user_id = session['pending_2fa_user_id']
             user = User.query.get(user_id)
             
+            # Allow all users to log in (approved and unapproved)
+            # Unapproved users will see limited dashboard access
+            
             # Set permanent session
             session['user_id'] = user_id
             session['user_email'] = user.username
@@ -111,7 +118,11 @@ def verify_2fa():
             add_system_log(f"✓ 2FA VERIFIED: {user.get_display_name()} | Challenge Code Matched", "SUCCESS")
             add_system_log(f"✓ LOGIN STEP 2: Signature Verified | RSA Challenge Response Authenticated", "SUCCESS")
             
-            return redirect(url_for('dashboard'))
+            # Redirect admin users to admin dashboard, others to regular dashboard
+            if user.role == 'admin':
+                return redirect(url_for('admin_dashboard'))
+            else:
+                return redirect(url_for('dashboard'))
         else:
             add_system_log(f"❌ 2FA FAILED: Invalid challenge code entered", "ERROR")
             return render_template('verify_2fa.html', 
@@ -152,17 +163,26 @@ def register():
         if password != confirm_password:
             return render_template('register.html', error='Passwords do not match')
         
+        # Prevent admin role selection during registration
+        if role == 'admin':
+            return render_template('register.html', error='Admin accounts cannot be created during registration. Contact system administrator.')
+        
         if User.query.filter_by(username=display_name).first():
             return render_template('register.html', error='Name already in use')
         
         try:
             # Create new user with display_name as username
+            # Generate verification code (6 digits)
+            verification_code = random.randint(100000, 999999)
+            
             user = User(
                 username=display_name,
                 display_name=display_name,
                 role=role,
-                two_fa_enabled=True
+                two_fa_enabled=True,
+                is_approved=False  # All new registrations require approval
             )
+            user.two_fa_challenge = str(verification_code)  # Store verification code
             user.set_password(password)
             
             # Auto-generate RSA keys (256-bit demo, 2048-bit production)
@@ -199,12 +219,14 @@ def register():
             db.session.commit()
             
             add_system_log(
-                f"✓ REGISTRATION SUCCESSFUL: New {role.capitalize()} registered | {display_name} ({email}) | Email & NID encrypted with RSA | 2FA enabled",
+                f"✓ REGISTRATION SUCCESSFUL: New {role.capitalize()} registered | {display_name} ({email}) | Verification code generated",
                 "SUCCESS"
             )
             
-            # Redirect to homepage with success message
-            return redirect(url_for('index'))
+            # Redirect to verification page
+            session['pending_user_id'] = user.id
+            session['verification_code'] = verification_code
+            return redirect(url_for('verify_registration'))
         
         except Exception as e:
             db.session.rollback()
@@ -212,6 +234,50 @@ def register():
             return render_template('register.html', error=f'Registration failed: {str(e)}')
     
     return render_template('register.html')
+
+@app.route('/verify-registration', methods=['GET', 'POST'])
+def verify_registration():
+    """
+    Email Verification for New Registrations.
+    User must enter the 6-digit code sent during registration.
+    """
+    if 'pending_user_id' not in session:
+        return redirect(url_for('register'))
+    
+    if request.method == 'POST':
+        user_input = request.form.get('verification_code', '').strip()
+        expected_code = str(session.get('verification_code', ''))
+        
+        if user_input == expected_code:
+            # Code matches - user can now access dashboard (but still pending admin approval)
+            user_id = session['pending_user_id']
+            user = User.query.get(user_id)
+            
+            if user:
+                # Log in the user to their dashboard
+                session['user_id'] = user.id
+                del session['pending_user_id']
+                del session['verification_code']
+                
+                add_system_log(
+                    f"✓ EMAIL VERIFIED: {user.get_display_name()} verified their registration code | Pending admin approval",
+                    "SUCCESS"
+                )
+                
+                return redirect(url_for('dashboard'))
+            else:
+                return render_template('verify_registration.html', error='User not found')
+        else:
+            add_system_log(
+                f"❌ VERIFICATION FAILED: Incorrect code entered",
+                "ALERT"
+            )
+            return render_template('verify_registration.html', error='Invalid verification code')
+    
+    user_id = session.get('pending_user_id')
+    user = User.query.get(user_id)
+    verification_code = session.get('verification_code', '')
+    return render_template('verify_registration.html', user=user, verification_code=verification_code)
 
 @app.route('/dashboard')
 def dashboard():
@@ -235,13 +301,18 @@ def dashboard():
     # Get system integrity status
     system_integrity = get_system_integrity(user)
     
+    # Get unread message count
+    unread_count = Message.query.filter_by(receiver_id=user_id, is_read=False).count()
+    
     return render_template('dashboard.html', 
                          user=user,
                          user_name=user.get_display_name(),
                          user_role=user.role,
                          stats=stats,
                          recent_activity=recent_activity,
-                         system_integrity=system_integrity)
+                         system_integrity=system_integrity,
+                         is_approved=user.is_approved,
+                         unread_messages=unread_count)
 
 @app.route('/logout')
 def logout():
@@ -449,20 +520,65 @@ def send_message():
 @app.route('/chat-list')
 def chat_list():
     """
-    Display list of available users to chat with.
-    Shows all other users in the system.
+    Display list of users who have sent messages to current user.
+    Shows conversation history first, with search to find others.
+    Template syntax fixed.
     """
+    # Fixed template syntax error
     if 'user_id' not in session:
         return redirect(url_for('login'))
     
     current_user_id = session.get('user_id')
     current_user = User.query.get(current_user_id)
     
-    # Get all other users
-    available_users = User.query.filter(User.id != current_user_id).all()
+    # Get users who have sent messages to current user (conversations)
+    message_senders = db.session.query(User).join(
+        Message, Message.sender_id == User.id
+    ).filter(Message.receiver_id == current_user_id).distinct().order_by(Message.timestamp.desc()).all()
+    
+    # Remove duplicates while preserving order
+    seen_ids = set()
+    active_users = []
+    for user in message_senders:
+        if user.id not in seen_ids:
+            active_users.append(user)
+            seen_ids.add(user.id)
+    
+    # Also add users current user has sent messages to
+    message_receivers = db.session.query(User).join(
+        Message, Message.receiver_id == User.id
+    ).filter(Message.sender_id == current_user_id).distinct().all()
+    
+    for user in message_receivers:
+        if user.id not in seen_ids:
+            active_users.append(user)
+            seen_ids.add(user.id)
+    
+    # Get all other users for search
+    all_users = User.query.filter(User.id != current_user_id).all()
+    
+    # Convert User objects to dictionaries with message count for JSON serialization
+    active_users_dict = []
+    for u in active_users:
+        # Count unread messages from this user to current user
+        unread_count = Message.query.filter(
+            Message.sender_id == u.id,
+            Message.receiver_id == current_user_id,
+            Message.is_read == False
+        ).count()
+        
+        active_users_dict.append({
+            'id': u.id,
+            'username': u.username,
+            'role': u.role,
+            'message_count': unread_count
+        })
+    
+    all_users_dict = [{'id': u.id, 'username': u.username, 'role': u.role} for u in all_users]
     
     return render_template('chat_list.html',
-                         available_users=available_users,
+                         active_users=active_users_dict,
+                         all_users=all_users_dict,
                          user_name=current_user.username,
                          user_role=current_user.role)
 
@@ -526,6 +642,18 @@ def chat(user_id):
         else:
             msg.display_content = msg.encrypted_content
         
+        db.session.add(msg)
+    db.session.commit()
+    
+    # Mark all messages from other user as read
+    unread_messages = Message.query.filter(
+        Message.sender_id == user_id,
+        Message.receiver_id == current_user_id,
+        Message.is_read == False
+    ).all()
+    
+    for msg in unread_messages:
+        msg.is_read = True
         db.session.add(msg)
     db.session.commit()
     
@@ -672,10 +800,10 @@ def simulate_attack(content_id):
     
     user = User.query.get(session.get('user_id'))
     
-    # Check if user is admin (for demo, allow any doctor to simulate)
-    if user.role not in ['doctor', 'specialist']:
-        add_system_log(f"Attack simulation denied: User {user.get_display_name()} not authorized", "ALERT")
-        return jsonify({'error': 'Not authorized'}), 403
+    # Check if user is admin
+    if user.role != 'admin':
+        add_system_log(f"Attack simulation denied: User {user.get_display_name()} not authorized (admin only)", "ALERT")
+        return jsonify({'error': 'Not authorized - Admin role required'}), 403
     
     try:
         # Try to find as message first
@@ -903,7 +1031,8 @@ def init_sample_data():
         display_name='Patient User',
         role='patient',
         public_key='mock_patient_public_key',
-        encrypted_profile='encrypted_patient_profile'
+        encrypted_profile='encrypted_patient_profile',
+        is_approved=True
     )
     patient.set_password('patient123')
     # Generate RSA keys (256-bit for demo speed)
@@ -926,7 +1055,8 @@ def init_sample_data():
         display_name='Dr. Doctor',
         role='doctor',
         public_key='mock_doctor_public_key',
-        encrypted_profile='encrypted_doctor_profile'
+        encrypted_profile='encrypted_doctor_profile',
+        is_approved=True
     )
     doctor.set_password('doctor123')
     # Generate RSA keys
@@ -949,7 +1079,8 @@ def init_sample_data():
         display_name='Dr. Specialist',
         role='specialist',
         public_key='mock_specialist_public_key',
-        encrypted_profile='encrypted_specialist_profile'
+        encrypted_profile='encrypted_specialist_profile',
+        is_approved=True
     )
     specialist.set_password('specialist123')
     # Generate RSA keys
@@ -967,9 +1098,34 @@ def init_sample_data():
         print(f"[WARNING] Failed to generate ECC keys for specialist: {e}")
         pass
     
+    admin = User(
+        username='admin@medlink.com',
+        display_name='System Admin',
+        role='admin',
+        public_key='mock_admin_public_key',
+        encrypted_profile='encrypted_admin_profile',
+        is_approved=True
+    )
+    admin.set_password('admin123')
+    # Generate RSA keys
+    admin_rsa = generate_keys(256)
+    admin.set_rsa_keys(admin_rsa[0], admin_rsa[1])
+    # Generate ECC keys
+    try:
+        curve = create_test_curve()
+        admin_ecc_scalar = random.randint(1, 1000)
+        # Use point (0, 1) which is on the curve y² = x³ + x + 1 (mod 1009)
+        base_point = Point(0, 1, curve)
+        admin_ecc_public = curve.scalar_multiplication(admin_ecc_scalar, base_point)
+        admin.set_ecc_keys(admin_ecc_public, admin_ecc_scalar)
+    except Exception as e:
+        print(f"[WARNING] Failed to generate ECC keys for admin: {e}")
+        pass
+    
     db.session.add(patient)
     db.session.add(doctor)
     db.session.add(specialist)
+    db.session.add(admin)
     db.session.commit()
     
     add_system_log("Generated RSA & ECC keys for all users", "INFO")
@@ -1199,6 +1355,218 @@ def rotate_keys():
                          current_rsa_n_preview=str(rsa_key.get('n'))[:50] + '...' if rsa_key else 'None')
 
 
+@app.route('/admin/dashboard')
+def admin_dashboard():
+    """
+    Complete Admin Control Panel with user management and statistics.
+    """
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    
+    admin_user = User.query.get(session.get('user_id'))
+    
+    # Only allow admin users
+    if admin_user.role != 'admin':
+        return jsonify({'error': 'Access denied - Admin role required'}), 403
+    
+    # Get statistics
+    total_users = User.query.count()
+    approved_users = User.query.filter_by(is_approved=True).count()
+    total_patients = User.query.filter_by(role='patient', is_approved=True).count()
+    total_doctors = User.query.filter_by(role='doctor', is_approved=True).count()
+    total_specialists = User.query.filter_by(role='specialist', is_approved=True).count()
+    total_prescriptions = Document.query.filter_by(document_type='prescription').count()
+    total_referrals = Referral.query.count()
+    
+    # Get pending approvals
+    pending_approvals = User.query.filter_by(is_approved=False).all()
+    
+    # Get all approved users and specialists
+    all_approved_users = User.query.filter_by(is_approved=True).all()
+    all_specialists = User.query.filter_by(role='specialist', is_approved=True).all()
+    
+    # Get doctors with their prescriptions
+    doctors_with_prescriptions = []
+    doctors = User.query.filter_by(role='doctor', is_approved=True).all()
+    
+    for doctor in doctors:
+        # Get prescriptions created by this doctor (user_id = doctor.id)
+        prescriptions = Document.query.filter_by(
+            user_id=doctor.id,
+            document_type='prescription'
+        ).all()
+        
+        # Format prescriptions 
+        formatted_prescriptions = []
+        for rx in prescriptions:
+            # Extract patient name from encrypted content if possible
+            rx.patient_name = 'Patient - ' + rx.encrypted_content[:30] if rx.encrypted_content else 'Unknown Patient'
+            formatted_prescriptions.append(rx)
+        
+        doctor.prescriptions = formatted_prescriptions
+        if prescriptions:  # Only show doctors who have issued prescriptions
+            doctors_with_prescriptions.append(doctor)
+    
+    # Get system logs
+    system_logs = system_log
+    
+    add_system_log(f"Admin panel accessed by {admin_user.get_display_name()}", "INFO")
+    
+    return render_template('admin_dashboard.html',
+                         admin_user=admin_user,
+                         total_users=total_users,
+                         approved_users=approved_users,
+                         total_patients=total_patients,
+                         total_doctors=total_doctors,
+                         total_specialists=total_specialists,
+                         total_prescriptions=total_prescriptions,
+                         total_referrals=total_referrals,
+                         pending_approvals=pending_approvals,
+                         all_approved_users=all_approved_users,
+                         all_specialists=all_specialists,
+                         doctors_with_prescriptions=doctors_with_prescriptions,
+                         system_logs=system_logs)
+
+
+@app.route('/admin/approve/<int:user_id>', methods=['POST'])
+def approve_user(user_id):
+    """Approve a pending user account"""
+    if 'user_id' not in session:
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    admin = User.query.get(session.get('user_id'))
+    if admin.role != 'admin':
+        return jsonify({'error': 'Admin role required'}), 403
+    
+    user_to_approve = User.query.get(user_id)
+    if not user_to_approve:
+        return jsonify({'error': 'User not found'}), 404
+    
+    user_to_approve.is_approved = True
+    user_to_approve.approved_at = datetime.now()
+    user_to_approve.approved_by_admin_id = admin.id
+    
+    db.session.commit()
+    
+    add_system_log(
+        f"✓ USER APPROVED: {user_to_approve.get_display_name()} ({user_to_approve.role}) approved by {admin.get_display_name()}",
+        "SUCCESS"
+    )
+    
+    return jsonify({'success': True, 'message': f'User {user_to_approve.display_name} approved'}), 200
+
+
+@app.route('/admin/reject/<int:user_id>', methods=['POST'])
+def reject_user(user_id):
+    """Reject and delete a pending user account"""
+    if 'user_id' not in session:
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    admin = User.query.get(session.get('user_id'))
+    if admin.role != 'admin':
+        return jsonify({'error': 'Admin role required'}), 403
+    
+    user_to_reject = User.query.get(user_id)
+    if not user_to_reject:
+        return jsonify({'error': 'User not found'}), 404
+    
+    if user_to_reject.is_approved:
+        return jsonify({'error': 'Cannot reject already approved user'}), 400
+    
+    display_name = user_to_reject.get_display_name()
+    db.session.delete(user_to_reject)
+    db.session.commit()
+    
+    add_system_log(
+        f"✗ USER REJECTED: {display_name} rejected by {admin.get_display_name()}",
+        "ALERT"
+    )
+    
+    return jsonify({'success': True, 'message': f'User {display_name} rejected'}), 200
+
+
+@app.route('/admin/get-user-email/<int:user_id>', methods=['GET'])
+def get_user_email(user_id):
+    """Get decrypted email for a user (admin only)"""
+    if 'user_id' not in session:
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    admin = User.query.get(session.get('user_id'))
+    if admin.role != 'admin':
+        return jsonify({'error': 'Admin role required'}), 403
+    
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+    
+    decrypted_email = user.get_email()
+    
+    return jsonify({'email': decrypted_email}), 200
+
+
+@app.route('/admin/change-role/<int:user_id>', methods=['POST'])
+def change_user_role(user_id):
+    """Change user role (admin only)"""
+    if 'user_id' not in session:
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    admin = User.query.get(session.get('user_id'))
+    if admin.role != 'admin':
+        return jsonify({'error': 'Admin role required'}), 403
+    
+    user_to_update = User.query.get(user_id)
+    if not user_to_update:
+        return jsonify({'error': 'User not found'}), 404
+    
+    data = request.get_json()
+    new_role = data.get('role', '').lower()
+    
+    valid_roles = ['patient', 'doctor', 'specialist', 'admin']
+    if new_role not in valid_roles:
+        return jsonify({'error': 'Invalid role'}), 400
+    
+    old_role = user_to_update.role
+    user_to_update.role = new_role
+    db.session.commit()
+    
+    add_system_log(
+        f"🔄 ROLE CHANGED: {user_to_update.get_display_name()} {old_role} → {new_role} by {admin.get_display_name()}",
+        "INFO"
+    )
+    
+    return jsonify({'success': True, 'message': f'User role changed to {new_role}'}), 200
+
+
+@app.route('/admin/remove-user/<int:user_id>', methods=['POST'])
+def remove_user_account(user_id):
+    """Remove user account (admin only)"""
+    if 'user_id' not in session:
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    admin = User.query.get(session.get('user_id'))
+    if admin.role != 'admin':
+        return jsonify({'error': 'Admin role required'}), 403
+    
+    user_to_remove = User.query.get(user_id)
+    if not user_to_remove:
+        return jsonify({'error': 'User not found'}), 404
+    
+    if user_to_remove.id == admin.id:
+        return jsonify({'error': 'Cannot remove your own account'}), 400
+    
+    display_name = user_to_remove.get_display_name()
+    user_role = user_to_remove.role
+    
+    db.session.delete(user_to_remove)
+    db.session.commit()
+    
+    add_system_log(
+        f"🗑️ USER DELETED: {display_name} ({user_role}) removed by {admin.get_display_name()}",
+        "ALERT"
+    )
+    
+    return jsonify({'success': True, 'message': f'User {display_name} removed'}), 200
+
 
 @app.route('/admin/attack-simulator')
 def attack_simulator():
@@ -1217,9 +1585,9 @@ def attack_simulator():
     
     user = User.query.get(session.get('user_id'))
     
-    # Only allow doctors/admins
-    if user.role not in ['doctor', 'specialist']:
-        return jsonify({'error': 'Access denied'}), 403
+    # Only allow admin users
+    if user.role != 'admin':
+        return jsonify({'error': 'Access denied - Admin role required'}), 403
     
     # Get sample encrypted data
     messages = Message.query.limit(10).all()
@@ -1563,6 +1931,139 @@ def patient_prescriptions():
                              error=str(e))
 
 
+# ==================== Real-Time Chat with Socket.IO ====================
+
+# Track connected users
+connected_users = {}
+
+@socketio.on('connect')
+def handle_connect():
+    """Handle user connection to real-time chat"""
+    if 'user_id' in session:
+        user_id = session['user_id']
+        user = User.query.get(user_id)
+        if user:
+            connected_users[request.sid] = {
+                'user_id': user_id,
+                'username': user.get_display_name(),
+                'role': user.role
+            }
+            emit('user_connected', {
+                'user': user.get_display_name(),
+                'message': f'{user.get_display_name()} joined the chat'
+            }, broadcast=True)
+            add_system_log(f"🟢 CHAT CONNECTED: {user.get_display_name()}", "INFO")
+
+
+@socketio.on('disconnect')
+def handle_disconnect():
+    """Handle user disconnection from real-time chat"""
+    if request.sid in connected_users:
+        user_info = connected_users.pop(request.sid)
+        emit('user_disconnected', {
+            'user': user_info['username'],
+            'message': f'{user_info["username"]} left the chat'
+        }, broadcast=True)
+        add_system_log(f"🔴 CHAT DISCONNECTED: {user_info['username']}", "INFO")
+
+
+@socketio.on('join_room')
+def on_join(data):
+    """Join a specific chat room"""
+    room = data.get('room')
+    user_id = session.get('user_id')
+    
+    if user_id and room:
+        user = User.query.get(user_id)
+        join_room(room)
+        emit('message', {
+            'msg': f'{user.get_display_name()} joined the chat',
+            'user': user.get_display_name(),
+            'timestamp': datetime.now().strftime('%H:%M:%S')
+        }, to=room)
+        add_system_log(f"User {user.get_display_name()} joined room {room}", "INFO")
+
+
+@socketio.on('send_message')
+def handle_message(data):
+    """Real-time message sending with encryption"""
+    user_id = session.get('user_id')
+    if not user_id:
+        return
+    
+    sender = User.query.get(user_id)
+    receiver_id = data.get('receiver_id')
+    message_text = data.get('message')
+    room = data.get('room')
+    
+    if not message_text:
+        return
+    
+    # Get receiver
+    receiver = User.query.get(receiver_id)
+    if not receiver:
+        emit('error', {'message': 'Receiver not found'})
+        return
+    
+    try:
+        # Encrypt message with ECC
+        sender_ecc_pub = sender.get_ecc_public_key()
+        receiver_ecc_pub = receiver.get_ecc_public_key()
+        
+        encrypted_content = ecc_encrypt_message(sender_ecc_pub, receiver_ecc_pub, message_text)
+        
+        # Generate MAC for integrity
+        hmac_key = f"message_{sender.id}"
+        mac_tag = generate_mac(hmac_key, encrypted_content)
+        
+        # Create message record
+        msg = Message(
+            sender_id=sender.id,
+            receiver_id=receiver.id,
+            encrypted_content=encrypted_content,
+            mac_tag=mac_tag,
+            is_verified=True
+        )
+        db.session.add(msg)
+        db.session.commit()
+        
+        # Emit real-time message
+        emit('receive_message', {
+            'sender': sender.get_display_name(),
+            'sender_id': sender.id,
+            'message': message_text,  # Show plaintext in real-time
+            'timestamp': datetime.now().strftime('%H:%M:%S'),
+            'encrypted': True,
+            'verified': True
+        }, to=room or f"chat_{receiver_id}")
+        
+        add_system_log(
+            f"💬 MESSAGE SENT: {sender.get_display_name()} → {receiver.get_display_name()} | Encrypted with ECC & MAC verified",
+            "SUCCESS"
+        )
+        
+    except Exception as e:
+        emit('error', {'message': f'Failed to send message: {str(e)}'})
+        add_system_log(f"Error sending message: {str(e)}", "ERROR")
+
+
+@socketio.on('typing')
+def handle_typing(data):
+    """Broadcast typing indicator"""
+    user_id = session.get('user_id')
+    if not user_id:
+        return
+    
+    user = User.query.get(user_id)
+    receiver_id = data.get('receiver_id')
+    room = f"chat_{receiver_id}"
+    
+    emit('user_typing', {
+        'user': user.get_display_name(),
+        'typing': True
+    }, to=room)
+
+
 if __name__ == '__main__':
     with app.app_context():
         # Create all database tables
@@ -1587,12 +2088,13 @@ if __name__ == '__main__':
     ✅ Attack Simulation for Demo
     
     Demo Credentials:
+    - Admin:      admin@medlink.com / admin123
     - Patient:    patient@medlink.com / patient123
     - Doctor:     doctor@medlink.com / doctor123
     - Specialist: specialist@medlink.com / specialist123
     
-    Navigate to: http://localhost:5000
+    Navigate to: http://localhost:5001
     ========================================
     """)
     
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    socketio.run(app, debug=True, host='0.0.0.0', port=5001, allow_unsafe_werkzeug=True)

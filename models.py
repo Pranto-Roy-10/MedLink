@@ -6,12 +6,12 @@ import json
 db = SQLAlchemy()
 
 class User(db.Model):
-    """User model for Patient, Doctor, and Specialist"""
+    """User model for Patient, Doctor, Specialist, and Admin"""
     __tablename__ = 'users'
     
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(120), unique=True, nullable=False, index=True)
-    role = db.Column(db.String(20), nullable=False)  # 'patient', 'doctor', 'specialist'
+    role = db.Column(db.String(20), nullable=False)  # 'patient', 'doctor', 'specialist', 'admin'
     password_hash = db.Column(db.String(255), nullable=False)
     
     # Encrypted Email - Stored as RSA-encrypted hex string (zero-knowledge storage)
@@ -49,6 +49,11 @@ class User(db.Model):
     
     # Key Management
     last_key_rotation = db.Column(db.DateTime, nullable=True)
+    
+    # User Approval System
+    is_approved = db.Column(db.Boolean, default=False)  # False for new registrations
+    approved_at = db.Column(db.DateTime, nullable=True)
+    approved_by_admin_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
     
     created_at = db.Column(db.DateTime, default=datetime.now)
     updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
@@ -101,6 +106,7 @@ class User(db.Model):
         role_prefixes = {
             'doctor': 'Dr. ',
             'specialist': 'Dr. ',
+            'admin': 'Admin ',
             'patient': ''
         }
         prefix = role_prefixes.get(self.role, '')

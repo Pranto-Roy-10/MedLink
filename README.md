@@ -14,13 +14,6 @@ A professional, enterprise-grade Flask-based medical platform for secure referra
 - **End-to-End Message Encryption**: ECC-based encryption for real-time chat messages
 - **Steganographic Prescription Storage**: Hidden data storage in prescription documents
 
-### 🎬 **Modern Visual Effects**
-- **Neural Network Background Animation**: Animated SVG with 50 glowing nodes
-- **Dynamic node connections**: Real-time particle system with 300px connection radius
-- **Glow filter effects**: SVG blur and shadow effects for visual appeal
-- **Fade-in-up animations**: Smooth entrance animations for content
-- **Pulse & heartbeat effects**: Interactive animations for system health indicators
-- **Responsive resize handling**: Animation adapts to window size changes
 
 ### 📊 **Dashboard & User Features**
 - **Role-Based Portals**: Separate interfaces for Patients, Doctors, and Specialists

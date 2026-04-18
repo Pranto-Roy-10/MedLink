@@ -1568,55 +1568,6 @@ def remove_user_account(user_id):
     return jsonify({'success': True, 'message': f'User {display_name} removed'}), 200
 
 
-@app.route('/admin/attack-simulator')
-def attack_simulator():
-    """
-    Live Admin Attack Simulator and Database Monitor.
-    
-    Features:
-    - Live database monitor showing encrypted data
-    - "Inject Corrupted Bit" button to simulate attacks
-    - Split-screen showing: corruption → detection → HMAC alert
-    
-    Requirement: "Create a specific Admin Stress-Test Page"
-    """
-    if 'user_id' not in session:
-        return redirect(url_for('login'))
-    
-    user = User.query.get(session.get('user_id'))
-    
-    # Only allow admin users
-    if user.role != 'admin':
-        return jsonify({'error': 'Access denied - Admin role required'}), 403
-    
-    # Get sample encrypted data
-    messages = Message.query.limit(10).all()
-    referrals = Referral.query.limit(10).all()
-    
-    data_samples = []
-    for msg in messages:
-        data_samples.append({
-            'type': 'message',
-            'id': msg.id,
-            'content_preview': msg.encrypted_content[:50] + '...',
-            'mac_tag_preview': msg.mac_tag[:30] + '...' if msg.mac_tag else 'None',
-            'verified': msg.is_verified
-        })
-    
-    for ref in referrals:
-        data_samples.append({
-            'type': 'referral',
-            'id': ref.id,
-            'content_preview': ref.encrypted_content[:50] + '...',
-            'mac_tag_preview': ref.mac_tag[:30] + '...' if ref.mac_tag else 'None',
-            'verified': ref.is_verified
-        })
-    
-    return render_template('attack_simulator.html',
-                         data_samples=data_samples,
-                         user_name=user.get_display_name())
-
-
 @app.route('/doctor/create-prescription', methods=['GET', 'POST'])
 def create_prescription():
     """

@@ -12,7 +12,8 @@ from security.encryption_utils import (
     ecc_encrypt_message, ecc_decrypt_message,
     encrypt_email_rsa, decrypt_email_rsa
 )
-
+import smtplib
+from email.mime.text import MIMEText
 app = Flask(__name__)
 app.secret_key = 'your-secret-key-change-in-production'
 
@@ -38,6 +39,53 @@ def add_system_log(message, status='INFO'):
     if len(system_log) > 50:  # Keep last 50 entries
         system_log.pop(0)
     print(log_entry)
+    
+def send_otp_email(to_email, otp_code, purpose="login"):
+    sender_email = os.environ.get("SMTP_USERNAME")
+    sender_password = os.environ.get("SMTP_PASSWORD")
+
+    if not sender_email or not sender_password:
+        raise Exception("SMTP_USERNAME or SMTP_PASSWORD is missing")
+
+    # Different messages for different purposes
+    if purpose == "registration":
+        subject = "MedLink Account Verification OTP"
+
+        body = f"""
+Hello,
+
+Your account creation OTP is: {otp_code}
+
+Use this OTP to verify your MedLink account registration.
+
+This code will expire soon.
+
+If you did not create this account, please ignore this email.
+"""
+
+    else:
+        subject = "MedLink Login OTP"
+
+        body = f"""
+Hello,
+
+Your login OTP is: {otp_code}
+
+Use this OTP to complete your MedLink login.
+
+This code will expire soon.
+
+If this was not you, please secure your account immediately.
+"""
+
+    message = MIMEText(body)
+    message["Subject"] = subject
+    message["From"] = sender_email
+    message["To"] = to_email
+
+    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+        server.login(sender_email, sender_password)
+        server.sendmail(sender_email, to_email, message.as_string())
 
 @app.route('/')
 def index():
@@ -70,12 +118,31 @@ def login():
             
             session['pending_2fa_user_id'] = user.id
             session['2fa_challenge'] = challenge_code
-            session['2fa_signed'] = challenge_signed
-            session['2fa_timestamp'] = datetime.now().isoformat()
-            
-            add_system_log(f"✓ LOGIN STEP 1: {user.get_display_name()} | Challenge Generated: {challenge_code}", "SUCCESS")
-            
-            return redirect(url_for('verify_2fa'))
+            session['2fa_user_id'] = user.id
+            session['2fa_timestamp'] = datetime.now().timestamp()
+
+            try:
+                user_email = user.get_email()
+
+                send_otp_email(user_email, challenge_code, "login")
+
+                add_system_log(
+        f"✓ LOGIN STEP 1: {user.get_display_name()} | OTP sent to registered email",
+        "SUCCESS"
+    )
+
+                return redirect(url_for('verify_2fa'))
+
+            except Exception as e:
+                add_system_log(
+        f"❌ OTP EMAIL FAILED: {str(e)}",
+        "ERROR"
+    )
+
+                return render_template(
+        'login.html',
+        error='Password correct, but OTP email could not be sent.'
+    )
         else:
             add_system_log(f"❌ LOGIN FAILED: Username {username} - Invalid credentials", "ERROR")
             return render_template('login.html', error='Invalid credentials')
@@ -126,13 +193,11 @@ def verify_2fa():
         else:
             add_system_log(f"❌ 2FA FAILED: Invalid challenge code entered", "ERROR")
             return render_template('verify_2fa.html', 
-                                  error='Invalid challenge code',
+                                  error='Invalid OTP',
                                   user=User.query.get(session.get('pending_2fa_user_id')))
     
     user = User.query.get(session.get('pending_2fa_user_id'))
-    challenge = session.get('2fa_challenge')
-    
-    return render_template('verify_2fa.html', user=user, challenge=challenge)
+    return render_template('verify_2fa.html', user=user)
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
@@ -218,12 +283,26 @@ def register():
             db.session.add(user)
             db.session.commit()
             
-            add_system_log(
-                f"✓ REGISTRATION SUCCESSFUL: New {role.capitalize()} registered | {display_name} ({email}) | Verification code generated",
-                "SUCCESS"
-            )
-            
-            # Redirect to verification page
+            try:
+                send_otp_email(email, verification_code, "registration")
+
+                add_system_log(
+        f"✓ REGISTRATION SUCCESSFUL: New {role.capitalize()} registered | {display_name} ({email}) | OTP sent to email",
+        "SUCCESS"
+    )
+
+            except Exception as e:
+                add_system_log(
+        f"❌ REGISTRATION OTP EMAIL FAILED: {str(e)}",
+        "ERROR"
+    )
+
+                return render_template(
+        'register.html',
+        error='Account was created, but OTP email could not be sent. Please try again.'
+    )
+
+# Redirect to verification page
             session['pending_user_id'] = user.id
             session['verification_code'] = verification_code
             return redirect(url_for('verify_registration'))
@@ -276,8 +355,8 @@ def verify_registration():
     
     user_id = session.get('pending_user_id')
     user = User.query.get(user_id)
-    verification_code = session.get('verification_code', '')
-    return render_template('verify_registration.html', user=user, verification_code=verification_code)
+    
+    return render_template('verify_registration.html', user=user)
 
 @app.route('/dashboard')
 def dashboard():

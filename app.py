@@ -1127,11 +1127,19 @@ def get_dashboard_stats(user):
         status='pending'
     ).count()
     
-    # Pending Referrals (sent referrals not yet accepted)
-    stats['pending_referrals'] = Referral.query.filter_by(
-        sender_id=user.id,
-        status='pending'
-    ).count()
+    # Pending Referrals
+    # - For specialists we want referrals RECEIVED that are pending (they need to accept)
+    # - For other users we show referrals they SENT that are still pending
+    if getattr(user, 'role', None) == 'specialist':
+        stats['pending_referrals'] = Referral.query.filter_by(
+            receiver_id=user.id,
+            status='pending'
+        ).count()
+    else:
+        stats['pending_referrals'] = Referral.query.filter_by(
+            sender_id=user.id,
+            status='pending'
+        ).count()
     
     # Verified Documents (documents belonging to user with verified mac_tag)
     stats['verified_documents'] = Document.query.filter_by(

@@ -1,673 +1,1001 @@
-{% extends "base.html" %}
+{% extends "base.html" %} {% block title %}Admin Dashboard - MedLink{% endblock
+%} {% block content %}
+<div class="min-h-screen bg-slate-50" style="background-color: #f8fafc">
+  <div class="flex h-screen bg-slate-50">
+    <!-- Sidebar Navigation -->
+    <div
+      class="sidebar w-20 bg-white border-r border-slate-200 flex flex-col items-center py-8 space-y-8 fixed h-screen z-40"
+    >
+      <a
+        href="{{ url_for('admin_dashboard') }}"
+        class="flex items-center justify-center w-12 h-12 rounded-lg bg-gradient-to-br from-cyan-500 to-teal-600 hover:shadow-lg transition"
+      >
+        <svg
+          class="w-6 h-6 text-white"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"
+          ></path>
+        </svg>
+      </a>
 
-{% block title %}Admin Dashboard - MedLink{% endblock %}
+      <nav class="flex flex-col space-y-6 flex-1">
+        <a
+          href="{{ url_for('admin_dashboard') }}"
+          class="flex items-center justify-center w-12 h-12 rounded-lg bg-gradient-to-br from-cyan-500 to-teal-600 text-white hover:shadow-lg transition"
+          title="Admin Dashboard"
+        >
+          <svg
+            class="w-6 h-6"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+            ></path>
+          </svg>
+        </a>
+      </nav>
 
-{% block content %}
-<div class="min-h-screen bg-slate-50" style="background-color: #F8FAFC;">
-    <div class="flex h-screen bg-slate-50">
-        
-        <!-- Sidebar Navigation -->
-        <div class="sidebar w-20 bg-white border-r border-slate-200 flex flex-col items-center py-8 space-y-8 fixed h-screen z-40">
-            <a href="{{ url_for('admin_dashboard') }}" class="flex items-center justify-center w-12 h-12 rounded-lg bg-gradient-to-br from-cyan-500 to-teal-600 hover:shadow-lg transition">
-                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path>
-                </svg>
-            </a>
-
-            <nav class="flex flex-col space-y-6 flex-1">
-                <a href="{{ url_for('admin_dashboard') }}" class="flex items-center justify-center w-12 h-12 rounded-lg bg-gradient-to-br from-cyan-500 to-teal-600 text-white hover:shadow-lg transition" title="Admin Dashboard">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
-                    </svg>
-                </a>
-            </nav>
-
-            <a href="{{ url_for('logout') }}" class="flex items-center justify-center w-12 h-12 rounded-lg text-slate-600 hover:bg-red-100 hover:text-red-600 transition" title="Logout">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
-                </svg>
-            </a>
-        </div>
-
-        <!-- Main Content -->
-        <div class="flex-1 ml-20 overflow-auto">
-            <!-- Header -->
-            <div class="bg-white border-b border-slate-200 sticky top-0 z-30" style="animation: fadeInDown 0.6s ease-out;">
-                <div class="px-8 py-6 flex justify-between items-center">
-                    <div>
-                        <h1 class="text-4xl font-bold text-slate-900" style="font-family: 'Plus Jakarta Sans', sans-serif;">
-                            👑 Admin Control Panel
-                        </h1>
-                        <p class="text-slate-600 mt-1">System Overview & User Management</p>
-                    </div>
-                    
-                    <div class="flex items-center space-x-4">
-                        <div class="text-right">
-                            <p class="text-sm font-semibold text-slate-900">{{ admin_user.get_display_name() }}</p>
-                            <p class="text-xs text-slate-600">Administrator</p>
-                        </div>
-                        <div class="w-12 h-12 rounded-full bg-gradient-to-br from-cyan-500 to-teal-600 flex items-center justify-center text-white font-bold text-lg">
-                            A
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Content -->
-            <div class="p-8 space-y-8">
-                <!-- Statistics Cards - Now Clickable -->
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6" style="animation: fadeInUp 0.6s ease-out 0.1s both;">
-                    <!-- Total Users -->
-                    <button onclick="openModal('usersModal')" class="bg-white rounded-xl border border-slate-200 p-6 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 cursor-pointer text-left hover:border-blue-300">
-                        <div class="flex items-center justify-between mb-4">
-                            <h3 class="text-slate-600 font-semibold text-sm">Total Users</h3>
-                            <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                                <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.856-1.487M15 10a3 3 0 11-6 0 3 3 0 016 0zM6 20h12a6 6 0 006-6V4a6 6 0 00-6-6H6a6 6 0 00-6 6v10a6 6 0 006 6z"></path>
-                                </svg>
-                            </div>
-                        </div>
-                        <p class="text-3xl font-bold text-slate-900">{{ total_users }}</p>
-                        <p class="text-xs text-slate-500 mt-2">✅ {{ approved_users }} Approved</p>
-                    </button>
-
-                    <!-- Total Doctors -->
-                    <button onclick="openModal('doctorsModal')" class="bg-white rounded-xl border border-slate-200 p-6 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 cursor-pointer text-left hover:border-purple-300" style="animation-delay: 0.1s;">
-                        <div class="flex items-center justify-between mb-4">
-                            <h3 class="text-slate-600 font-semibold text-sm">Doctors</h3>
-                            <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-                                <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path>
-                                </svg>
-                            </div>
-                        </div>
-                        <p class="text-3xl font-bold text-slate-900">{{ total_doctors }}</p>
-                        <p class="text-xs text-slate-500 mt-2">Active Practitioners</p>
-                    </button>
-
-                    <!-- Total Specialists -->
-                    <button onclick="openModal('specialistsModal')" class="bg-white rounded-xl border border-slate-200 p-6 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 cursor-pointer text-left hover:border-green-300" style="animation-delay: 0.2s;">
-                        <div class="flex items-center justify-between mb-4">
-                            <h3 class="text-slate-600 font-semibold text-sm">Specialists</h3>
-                            <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                                <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m7 0a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                </svg>
-                            </div>
-                        </div>
-                        <p class="text-3xl font-bold text-slate-900">{{ total_specialists }}</p>
-                        <p class="text-xs text-slate-500 mt-2">Specialists Available</p>
-                    </button>
-
-                    <!-- Total Prescriptions -->
-                    <button onclick="openModal('prescriptionsModal')" class="bg-white rounded-xl border border-slate-200 p-6 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 cursor-pointer text-left hover:border-cyan-300" style="animation-delay: 0.3s;">
-                        <div class="flex items-center justify-between mb-4">
-                            <h3 class="text-slate-600 font-semibold text-sm">Prescriptions</h3>
-                            <div class="w-10 h-10 bg-cyan-100 rounded-lg flex items-center justify-center">
-                                <svg class="w-5 h-5 text-cyan-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
-                                </svg>
-                            </div>
-                        </div>
-                        <p class="text-3xl font-bold text-slate-900">{{ total_prescriptions }}</p>
-                        <p class="text-xs text-slate-500 mt-2">Created & Sent</p>
-                    </button>
-
-                    <!-- Total Referrals -->
-                    <button onclick="openModal('referralsModal')" class="bg-white rounded-xl border border-slate-200 p-6 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 cursor-pointer text-left hover:border-teal-300" style="animation-delay: 0.4s;">
-                        <div class="flex items-center justify-between mb-4">
-                            <h3 class="text-slate-600 font-semibold text-sm">Referrals</h3>
-                            <div class="w-10 h-10 bg-teal-100 rounded-lg flex items-center justify-center">
-                                <svg class="w-5 h-5 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.658 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path>
-                                </svg>
-                            </div>
-                        </div>
-                        <p class="text-3xl font-bold text-slate-900">{{ total_referrals }}</p>
-                        <p class="text-xs text-slate-500 mt-2">Specialist Requests</p>
-                    </button>
-                </div>
-
-                <!-- Two Column Layout -->
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    <!-- Pending Approvals (Left - 2 cols) -->
-                    <div class="lg:col-span-2" style="animation: fadeInUp 0.6s ease-out 0.2s both;">
-                        <div class="bg-white rounded-xl border border-slate-200 overflow-hidden hover:shadow-lg transition-shadow">
-                            <!-- Header -->
-                            <div class="bg-gradient-to-r from-amber-500 to-orange-600 p-6">
-                                <h2 class="text-xl font-bold text-white flex items-center gap-2">
-                                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                                        <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                    </svg>
-                                    Pending Approvals
-                                </h2>
-                                <p class="text-white text-sm opacity-90 mt-1">{{ pending_approvals|length }} waiting</p>
-                            </div>
-
-                            <!-- Users List -->
-                            <div class="p-6 max-h-[400px] overflow-y-auto">
-                                {% if pending_approvals %}
-                                    <div class="space-y-3">
-                                        {% for user in pending_approvals %}
-                                            <div class="border border-amber-200 bg-amber-50 rounded-lg p-4 hover:border-amber-400 transition flex justify-between items-center">
-                                                <div class="flex items-center gap-2">
-                                                    <div class="w-8 h-8 rounded-full bg-gradient-to-br from-orange-400 to-red-500 text-white flex items-center justify-center text-xs font-bold">
-                                                        {{ user.username[0]|upper }}
-                                                    </div>
-                                                    <div>
-                                                        <p class="font-semibold text-slate-900 text-sm">{{ user.get_display_name() }}</p>
-                                                        <div class="flex items-center gap-2 mt-1">
-                                                            <p class="text-xs text-slate-500">{{ user.role.capitalize() }}</p>
-                                                            <span class="text-xs px-2 py-0.5 bg-yellow-200 text-yellow-800 rounded font-semibold">⚠️ Unapproved</span>
-                                                        </div>
-                                                    </div>
-                                                </div>
-
-                                                <div class="flex gap-2">
-                                                    <button onclick="approveUser({{ user.id }})" class="bg-green-500 hover:bg-green-600 text-white text-xs font-semibold py-1 px-3 rounded transition">
-                                                        ✓ Approve
-                                                    </button>
-                                                    <button onclick="rejectUser({{ user.id }})" class="bg-red-500 hover:bg-red-600 text-white text-xs font-semibold py-1 px-3 rounded transition">
-                                                        ✕ Reject
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        {% endfor %}
-                                    </div>
-                                {% else %}
-                                    <div class="text-center py-12">
-                                        <svg class="w-12 h-12 text-slate-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                        </svg>
-                                        <p class="text-slate-500 text-sm">All users approved! ✅</p>
-                                    </div>
-                                {% endif %}
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Quick Stats Charts (Right) -->
-                    <div style="animation: fadeInUp 0.6s ease-out 0.3s both;">
-                        <div class="bg-white rounded-xl border border-slate-200 overflow-hidden hover:shadow-lg transition-shadow">
-                            <div class="bg-gradient-to-r from-slate-700 to-slate-900 p-6">
-                                <h2 class="text-xl font-bold text-white flex items-center gap-2">
-                                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                                        <path d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-                                    </svg>
-                                    Role Distribution
-                                </h2>
-                            </div>
-                            <div class="p-6">
-                                <canvas id="roleChart" style="max-height: 250px;"></canvas>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- System Logs -->
-                <div style="animation: fadeInUp 0.6s ease-out 0.4s both;">
-                    <div class="bg-white rounded-xl border border-slate-200 overflow-hidden hover:shadow-lg transition-shadow">
-                        <div class="bg-gradient-to-r from-slate-600 to-slate-800 p-6">
-                            <h2 class="text-xl font-bold text-white flex items-center gap-2">
-                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                                    <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                                </svg>
-                                System Logs
-                            </h2>
-                            <p class="text-white text-sm opacity-90 mt-1">Activity & Administrative Actions</p>
-                        </div>
-                        <div class="p-6 max-h-[400px] overflow-y-auto font-mono text-xs space-y-2" id="systemLogsContainer">
-                            <p class="text-slate-400">Loading logs...</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+      <a
+        href="{{ url_for('logout') }}"
+        class="flex items-center justify-center w-12 h-12 rounded-lg text-slate-600 hover:bg-red-100 hover:text-red-600 transition"
+        title="Logout"
+      >
+        <svg
+          class="w-6 h-6"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+          ></path>
+        </svg>
+      </a>
     </div>
+
+    <!-- Main Content -->
+    <div class="flex-1 ml-20 overflow-auto">
+      <!-- Header -->
+      <div
+        class="bg-white border-b border-slate-200 sticky top-0 z-30"
+        style="animation: fadeInDown 0.6s ease-out"
+      >
+        <div class="px-8 py-6 flex justify-between items-center">
+          <div>
+            <h1
+              class="text-4xl font-bold text-slate-900"
+              style="font-family: &quot;Plus Jakarta Sans&quot;, sans-serif"
+            >
+              👑 Admin Control Panel
+            </h1>
+            <p class="text-slate-600 mt-1">System Overview & User Management</p>
+          </div>
+
+          <div class="flex items-center space-x-4">
+            <div class="text-right">
+              <p class="text-sm font-semibold text-slate-900">
+                {{ admin_user.get_display_name() }}
+              </p>
+              <p class="text-xs text-slate-600">Administrator</p>
+            </div>
+            <div
+              class="w-12 h-12 rounded-full bg-gradient-to-br from-cyan-500 to-teal-600 flex items-center justify-center text-white font-bold text-lg"
+            >
+              A
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Content -->
+      <div class="p-8 space-y-8">
+        <!-- Statistics Cards - Now Clickable -->
+        <div
+          class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6"
+          style="animation: fadeInUp 0.6s ease-out 0.1s both"
+        >
+          <!-- Total Users -->
+          <button
+            onclick="openModal('usersModal')"
+            class="bg-white rounded-xl border border-slate-200 p-6 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 cursor-pointer text-left hover:border-blue-300"
+          >
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-slate-600 font-semibold text-sm">Total Users</h3>
+              <div
+                class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center"
+              >
+                <svg
+                  class="w-5 h-5 text-blue-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M17 20h5v-2a3 3 0 00-5.856-1.487M15 10a3 3 0 11-6 0 3 3 0 016 0zM6 20h12a6 6 0 006-6V4a6 6 0 00-6-6H6a6 6 0 00-6 6v10a6 6 0 006 6z"
+                  ></path>
+                </svg>
+              </div>
+            </div>
+            <p class="text-3xl font-bold text-slate-900">{{ total_users }}</p>
+            <p class="text-xs text-slate-500 mt-2">
+              ✅ {{ approved_users }} Approved
+            </p>
+          </button>
+
+          <!-- Total Doctors -->
+          <button
+            onclick="openModal('doctorsModal')"
+            class="bg-white rounded-xl border border-slate-200 p-6 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 cursor-pointer text-left hover:border-purple-300"
+            style="animation-delay: 0.1s"
+          >
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-slate-600 font-semibold text-sm">Doctors</h3>
+              <div
+                class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center"
+              >
+                <svg
+                  class="w-5 h-5 text-purple-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"
+                  ></path>
+                </svg>
+              </div>
+            </div>
+            <p class="text-3xl font-bold text-slate-900">{{ total_doctors }}</p>
+            <p class="text-xs text-slate-500 mt-2">Active Practitioners</p>
+          </button>
+
+          <!-- Total Specialists -->
+          <button
+            onclick="openModal('specialistsModal')"
+            class="bg-white rounded-xl border border-slate-200 p-6 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 cursor-pointer text-left hover:border-green-300"
+            style="animation-delay: 0.2s"
+          >
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-slate-600 font-semibold text-sm">Specialists</h3>
+              <div
+                class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center"
+              >
+                <svg
+                  class="w-5 h-5 text-green-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M9 12l2 2 4-4m7 0a9 9 0 11-18 0 9 9 0 0118 0z"
+                  ></path>
+                </svg>
+              </div>
+            </div>
+            <p class="text-3xl font-bold text-slate-900">
+              {{ total_specialists }}
+            </p>
+            <p class="text-xs text-slate-500 mt-2">Specialists Available</p>
+          </button>
+
+          <!-- Total Prescriptions -->
+          <button
+            onclick="openModal('prescriptionsModal')"
+            class="bg-white rounded-xl border border-slate-200 p-6 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 cursor-pointer text-left hover:border-cyan-300"
+            style="animation-delay: 0.3s"
+          >
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-slate-600 font-semibold text-sm">
+                Prescriptions
+              </h3>
+              <div
+                class="w-10 h-10 bg-cyan-100 rounded-lg flex items-center justify-center"
+              >
+                <svg
+                  class="w-5 h-5 text-cyan-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
+                  ></path>
+                </svg>
+              </div>
+            </div>
+            <p class="text-3xl font-bold text-slate-900">
+              {{ total_prescriptions }}
+            </p>
+            <p class="text-xs text-slate-500 mt-2">Created & Sent</p>
+          </button>
+
+          <!-- Total Referrals -->
+          <button
+            onclick="openModal('referralsModal')"
+            class="bg-white rounded-xl border border-slate-200 p-6 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 cursor-pointer text-left hover:border-teal-300"
+            style="animation-delay: 0.4s"
+          >
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-slate-600 font-semibold text-sm">Referrals</h3>
+              <div
+                class="w-10 h-10 bg-teal-100 rounded-lg flex items-center justify-center"
+              >
+                <svg
+                  class="w-5 h-5 text-teal-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.658 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
+                  ></path>
+                </svg>
+              </div>
+            </div>
+            <p class="text-3xl font-bold text-slate-900">
+              {{ total_referrals }}
+            </p>
+            <p class="text-xs text-slate-500 mt-2">Specialist Requests</p>
+          </button>
+        </div>
+
+        <!-- Two Column Layout -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <!-- Pending Approvals (Left - 2 cols) -->
+          <div
+            class="lg:col-span-2"
+            style="animation: fadeInUp 0.6s ease-out 0.2s both"
+          >
+            <div
+              class="bg-white rounded-xl border border-slate-200 overflow-hidden hover:shadow-lg transition-shadow"
+            >
+              <!-- Header -->
+              <div class="bg-gradient-to-r from-amber-500 to-orange-600 p-6">
+                <h2
+                  class="text-xl font-bold text-white flex items-center gap-2"
+                >
+                  <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                    <path
+                      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                    ></path>
+                  </svg>
+                  Pending Approvals
+                </h2>
+                <p class="text-white text-sm opacity-90 mt-1">
+                  {{ pending_approvals|length }} waiting
+                </p>
+              </div>
+
+              <!-- Users List -->
+              <div class="p-6 max-h-[400px] overflow-y-auto">
+                {% if pending_approvals %}
+                <div class="space-y-3">
+                  {% for user in pending_approvals %}
+                  <div
+                    class="border border-amber-200 bg-amber-50 rounded-lg p-4 hover:border-amber-400 transition flex justify-between items-center"
+                  >
+                    <div class="flex items-center gap-2">
+                      <div
+                        class="w-8 h-8 rounded-full bg-gradient-to-br from-orange-400 to-red-500 text-white flex items-center justify-center text-xs font-bold"
+                      >
+                        {{ user.username[0]|upper }}
+                      </div>
+                      <div>
+                        <p class="font-semibold text-slate-900 text-sm">
+                          {{ user.get_display_name() }}
+                        </p>
+                        <div class="flex items-center gap-2 mt-1">
+                          <p class="text-xs text-slate-500">
+                            {{ user.role.capitalize() }}
+                          </p>
+                          <span
+                            class="text-xs px-2 py-0.5 bg-yellow-200 text-yellow-800 rounded font-semibold"
+                            >⚠️ Unapproved</span
+                          >
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="flex gap-2">
+                      <button
+                        onclick="approveUser({{ user.id }})"
+                        class="bg-green-500 hover:bg-green-600 text-white text-xs font-semibold py-1 px-3 rounded transition"
+                      >
+                        ✓ Approve
+                      </button>
+                      <button
+                        onclick="rejectUser({{ user.id }})"
+                        class="bg-red-500 hover:bg-red-600 text-white text-xs font-semibold py-1 px-3 rounded transition"
+                      >
+                        ✕ Reject
+                      </button>
+                    </div>
+                  </div>
+                  {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-12">
+                  <svg
+                    class="w-12 h-12 text-slate-300 mx-auto mb-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                    ></path>
+                  </svg>
+                  <p class="text-slate-500 text-sm">All users approved! ✅</p>
+                </div>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+
+          <!-- Quick Stats Charts (Right) -->
+          <div style="animation: fadeInUp 0.6s ease-out 0.3s both">
+            <div
+              class="bg-white rounded-xl border border-slate-200 overflow-hidden hover:shadow-lg transition-shadow"
+            >
+              <div class="bg-gradient-to-r from-slate-700 to-slate-900 p-6">
+                <h2
+                  class="text-xl font-bold text-white flex items-center gap-2"
+                >
+                  <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                  </svg>
+                  Role Distribution
+                </h2>
+              </div>
+              <div class="p-6">
+                <canvas id="roleChart" style="max-height: 250px"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- System Logs -->
+        <div style="animation: fadeInUp 0.6s ease-out 0.4s both">
+          <div
+            class="bg-white rounded-xl border border-slate-200 overflow-hidden hover:shadow-lg transition-shadow"
+          >
+            <div class="bg-gradient-to-r from-slate-600 to-slate-800 p-6">
+              <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                  <path
+                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                  ></path>
+                </svg>
+                System Logs
+              </h2>
+              <p class="text-white text-sm opacity-90 mt-1">
+                Activity & Administrative Actions
+              </p>
+            </div>
+            <div
+              class="p-6 max-h-[400px] overflow-y-auto font-mono text-xs space-y-2"
+              id="systemLogsContainer"
+            >
+              <p class="text-slate-400">Loading logs...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <style>
-    @keyframes fadeInUp {
-        from {
-            opacity: 0;
-            transform: translateY(20px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
     }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
 
-    @keyframes fadeInDown {
-        from {
-            opacity: 0;
-            transform: translateY(-20px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
+  @keyframes fadeInDown {
+    from {
+      opacity: 0;
+      transform: translateY(-20px);
     }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
 
-    .ml-13 {
-        margin-left: 3.25rem;
-    }
+  .ml-13 {
+    margin-left: 3.25rem;
+  }
 
-    /* Smooth scrolling */
-    ::-webkit-scrollbar {
-        width: 6px;
-    }
+  /* Smooth scrolling */
+  ::-webkit-scrollbar {
+    width: 6px;
+  }
 
-    ::-webkit-scrollbar-track {
-        background: #f3f4f6;
-        border-radius: 10px;
-    }
+  ::-webkit-scrollbar-track {
+    background: #f3f4f6;
+    border-radius: 10px;
+  }
 
-    ::-webkit-scrollbar-thumb {
-        background: #cbd5e1;
-        border-radius: 10px;
-    }
+  ::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 10px;
+  }
 
-    ::-webkit-scrollbar-thumb:hover {
-        background: #94a3b8;
-    }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+  }
 </style>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <script>
-    let roleChart = null;
+  let roleChart = null;
 
-    function openModal(modalId) {
-        document.getElementById(modalId).classList.remove('hidden');
-    }
+  function openModal(modalId) {
+      document.getElementById(modalId).classList.remove('hidden');
+  }
 
-    function closeModal(modalId) {
-        document.getElementById(modalId).classList.add('hidden');
-    }
+  function closeModal(modalId) {
+      document.getElementById(modalId).classList.add('hidden');
+  }
 
-    function approveUser(userId) {
-        if (confirm('Approve this user?')) {
-            fetch(`/admin/approve/${userId}`, {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'}
-            }).then(response => {
-                if (response.ok) location.reload();
-                else alert('Error approving user');
-            }).catch(error => alert('Error: ' + error));
-        }
-    }
+  function approveUser(userId) {
+      if (confirm('Approve this user?')) {
+          fetch(`/admin/approve/${userId}`, {
+              method: 'POST',
+              headers: {'Content-Type': 'application/json'}
+          }).then(response => {
+              if (response.ok) location.reload();
+              else alert('Error approving user');
+          }).catch(error => alert('Error: ' + error));
+      }
+  }
 
-    function rejectUser(userId) {
-        if (confirm('Permanently reject this user?')) {
-            fetch(`/admin/reject/${userId}`, {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'}
-            }).then(response => {
-                if (response.ok) location.reload();
-                else alert('Error rejecting user');
-            }).catch(error => alert('Error: ' + error));
-        }
-    }
+  function rejectUser(userId) {
+      if (confirm('Permanently reject this user?')) {
+          fetch(`/admin/reject/${userId}`, {
+              method: 'POST',
+              headers: {'Content-Type': 'application/json'}
+          }).then(response => {
+              if (response.ok) location.reload();
+              else alert('Error rejecting user');
+          }).catch(error => alert('Error: ' + error));
+      }
+  }
 
-    function changeUserRole(userId, newRole) {
-        if (confirm(`Change user role to ${newRole}?`)) {
-            fetch(`/admin/change-role/${userId}`, {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({role: newRole})
-            }).then(response => {
-                if (response.ok) {
-                    alert('User role updated successfully');
-                    location.reload();
-                } else alert('Error changing role');
-            }).catch(error => alert('Error: ' + error));
-        }
-    }
+  function changeUserRole(userId, newRole) {
+      if (confirm(`Change user role to ${newRole}?`)) {
+          fetch(`/admin/change-role/${userId}`, {
+              method: 'POST',
+              headers: {'Content-Type': 'application/json'},
+              body: JSON.stringify({role: newRole})
+          }).then(response => {
+              if (response.ok) {
+                  alert('User role updated successfully');
+                  location.reload();
+              } else alert('Error changing role');
+          }).catch(error => alert('Error: ' + error));
+      }
+  }
 
-    function removeUser(userId) {
-        if (confirm('Are you sure? This will permanently delete the user account.')) {
-            fetch(`/admin/remove-user/${userId}`, {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'}
-            }).then(response => {
-                if (response.ok) {
-                    alert('User removed successfully');
-                    location.reload();
-                } else alert('Error removing user');
-            }).catch(error => alert('Error: ' + error));
-        }
-    }
+  function removeUser(userId) {
+      if (confirm('Are you sure? This will permanently delete the user account.')) {
+          fetch(`/admin/remove-user/${userId}`, {
+              method: 'POST',
+              headers: {'Content-Type': 'application/json'}
+          }).then(response => {
+              if (response.ok) {
+                  alert('User removed successfully');
+                  location.reload();
+              } else alert('Error removing user');
+          }).catch(error => alert('Error: ' + error));
+      }
+  }
 
-    // Initialize Charts
-    function initCharts() {
-        const ctx = document.getElementById('roleChart');
-        if (ctx) {
-            if (roleChart) roleChart.destroy();
-            roleChart = new Chart(ctx, {
-                type: 'doughnut',
-                data: {
-                    labels: ['Patients', 'Doctors', 'Specialists', 'Admin'],
-                    datasets: [{
-                        data: [{{ total_patients }}, {{ total_doctors }}, {{ total_specialists }}, 1],
-                        backgroundColor: ['#3b82f6', '#a855f7', '#10b981', '#06b6d4'],
-                        borderColor: '#ffffff',
-                        borderWidth: 2
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: true,
-                    plugins: {
-                        legend: {
-                            position: 'bottom',
-                            labels: {font: {size: 12}, padding: 15}
-                        }
-                    }
-                }
-            });
-        }
-    }
+  // Initialize Charts
+  function initCharts() {
+      const ctx = document.getElementById('roleChart');
+      if (ctx) {
+          if (roleChart) roleChart.destroy();
+          roleChart = new Chart(ctx, {
+              type: 'doughnut',
+              data: {
+                  labels: ['Patients', 'Doctors', 'Specialists', 'Admin'],
+                  datasets: [{
+                      data: [{{ total_patients }}, {{ total_doctors }}, {{ total_specialists }}, 1],
+                      backgroundColor: ['#3b82f6', '#a855f7', '#10b981', '#06b6d4'],
+                      borderColor: '#ffffff',
+                      borderWidth: 2
+                  }]
+              },
+              options: {
+                  responsive: true,
+                  maintainAspectRatio: true,
+                  plugins: {
+                      legend: {
+                          position: 'bottom',
+                          labels: {font: {size: 12}, padding: 15}
+                      }
+                  }
+              }
+          });
+      }
+  }
 
-    // Close modals when clicking outside
-    window.onclick = function(event) {
-        if (event.target.classList.contains('modal')) {
-            event.target.classList.add('hidden');
-        }
-    }
+  // Close modals when clicking outside
+  window.onclick = function(event) {
+      if (event.target.classList.contains('modal')) {
+          event.target.classList.add('hidden');
+      }
+  }
 
-    // Initialize on page load
-    document.addEventListener('DOMContentLoaded', function() {
-        initCharts();
-        loadSystemLogs();
-    });
+  // Initialize on page load
+  document.addEventListener('DOMContentLoaded', function() {
+      initCharts();
+      loadSystemLogs();
+  });
 
-    // Load system logs
-    function loadSystemLogs() {
-        fetch('/system-log')
-            .then(response => response.json())
-            .then(data => {
-                const container = document.getElementById('systemLogsContainer');
-                if (data.log && data.log.length > 0) {
-                    container.innerHTML = data.log.map(log => {
-                        const logText = log.trim();
-                        let colorClass = 'text-slate-500';
-                        
-                        // Color code based on status
-                        if (logText.includes('✅') || logText.includes('SUCCESS')) {
-                            colorClass = 'text-green-600';
-                        } else if (logText.includes('✓')) {
-                            colorClass = 'text-green-500';
-                        } else if (logText.includes('⚠️') || logText.includes('WARN')) {
-                            colorClass = 'text-yellow-600';
-                        } else if (logText.includes('❌') || logText.includes('ERROR')) {
-                            colorClass = 'text-red-600';
-                        } else if (logText.includes('🗑️') || logText.includes('ALERT') || logText.includes('DELETE')) {
-                            colorClass = 'text-red-500';
-                        } else if (logText.includes('🔄') || logText.includes('CHANGE')) {
-                            colorClass = 'text-blue-600';
-                        } else if (logText.includes('[INFO]') || logText.includes('[DEBUG]')) {
-                            colorClass = 'text-slate-400';
-                        }
-                        
-                        return `<div class="${colorClass} bg-slate-50 p-2 rounded border-l-2 border-slate-300">${logText}</div>`;
-                    }).reverse().join('');
-                } else {
-                    container.innerHTML = '<p class="text-slate-400 text-center py-8">No logs yet</p>';
-                }
-            })
-            .catch(error => {
-                console.error('Error loading logs:', error);
-                document.getElementById('systemLogsContainer').innerHTML = '<p class="text-red-500">Failed to load logs</p>';
-            });
-    }
+  // Load system logs
+  function loadSystemLogs() {
+      fetch('/system-log')
+          .then(response => response.json())
+          .then(data => {
+              const container = document.getElementById('systemLogsContainer');
+              if (data.log && data.log.length > 0) {
+                  container.innerHTML = data.log.map(log => {
+                      const logText = log.trim();
+                      let colorClass = 'text-slate-500';
 
-    // Refresh logs every 5 seconds
-    setInterval(loadSystemLogs, 5000);
+                      // Color code based on status
+                      if (logText.includes('✅') || logText.includes('SUCCESS')) {
+                          colorClass = 'text-green-600';
+                      } else if (logText.includes('✓')) {
+                          colorClass = 'text-green-500';
+                      } else if (logText.includes('⚠️') || logText.includes('WARN')) {
+                          colorClass = 'text-yellow-600';
+                      } else if (logText.includes('❌') || logText.includes('ERROR')) {
+                          colorClass = 'text-red-600';
+                      } else if (logText.includes('🗑️') || logText.includes('ALERT') || logText.includes('DELETE')) {
+                          colorClass = 'text-red-500';
+                      } else if (logText.includes('🔄') || logText.includes('CHANGE')) {
+                          colorClass = 'text-blue-600';
+                      } else if (logText.includes('[INFO]') || logText.includes('[DEBUG]')) {
+                          colorClass = 'text-slate-400';
+                      }
+
+                      return `<div class="${colorClass} bg-slate-50 p-2 rounded border-l-2 border-slate-300">${logText}</div>`;
+                  }).reverse().join('');
+              } else {
+                  container.innerHTML = '<p class="text-slate-400 text-center py-8">No logs yet</p>';
+              }
+          })
+          .catch(error => {
+              console.error('Error loading logs:', error);
+              document.getElementById('systemLogsContainer').innerHTML = '<p class="text-red-500">Failed to load logs</p>';
+          });
+  }
+
+  // Refresh logs every 5 seconds
+  setInterval(loadSystemLogs, 5000);
 </script>
 
 <!-- MODALS -->
 
 <!-- Users Modal -->
-<div id="usersModal" class="modal hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onclick="closeModal('usersModal')">
-    <div class="bg-white rounded-xl max-w-2xl w-full max-h-96 overflow-y-auto mx-4" onclick="event.stopPropagation()">
-        <div class="bg-gradient-to-r from-cyan-500 to-teal-600 p-6 sticky top-0">
-            <h2 class="text-2xl font-bold text-white">All Users ({{ total_users }})</h2>
-            <button onclick="closeModal('usersModal')" class="absolute top-4 right-4 text-white hover:bg-white hover:bg-opacity-20 p-2 rounded">✕</button>
-        </div>
-        <div class="p-6 space-y-3">
-            {% for user in all_approved_users %}
-                <div class="border border-slate-200 rounded-lg p-4 hover:border-cyan-400 hover:bg-cyan-50 transition cursor-pointer" onclick="showUserDetails({{ user.id }}, '{{ user.get_display_name() }}', '{{ user.role }}', '{{ user.username }}')">
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-400 to-teal-600 text-white flex items-center justify-center font-bold">
-                                {{ user.username[0]|upper }}
-                            </div>
-                            <div>
-                                <p class="font-semibold text-slate-900">{{ user.get_display_name() }}</p>
-                                <p class="text-xs text-slate-500">{{ user.role.capitalize() }} • {{ user.username }}</p>
-                            </div>
-                        </div>
-                        <span class="text-xs px-2 py-1 bg-green-100 text-green-700 rounded">✓ Active</span>
-                    </div>
-                </div>
-            {% endfor %}
-        </div>
+<div
+  id="usersModal"
+  class="modal hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+  onclick="closeModal('usersModal')"
+>
+  <div
+    class="bg-white rounded-xl max-w-2xl w-full max-h-96 overflow-y-auto mx-4"
+    onclick="event.stopPropagation()"
+  >
+    <div class="bg-gradient-to-r from-cyan-500 to-teal-600 p-6 sticky top-0">
+      <h2 class="text-2xl font-bold text-white">
+        All Users ({{ total_users }})
+      </h2>
+      <button
+        onclick="closeModal('usersModal')"
+        class="absolute top-4 right-4 text-white hover:bg-white hover:bg-opacity-20 p-2 rounded"
+      >
+        ✕
+      </button>
     </div>
+    <div class="p-6 space-y-3">
+      {% for user in all_approved_users %}
+      <div
+        class="border border-slate-200 rounded-lg p-4 hover:border-cyan-400 hover:bg-cyan-50 transition cursor-pointer"
+        onclick="showUserDetails({{ user.id }}, '{{ user.get_display_name() }}', '{{ user.role }}', '{{ user.username }}')"
+      >
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <div
+              class="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-400 to-teal-600 text-white flex items-center justify-center font-bold"
+            >
+              {{ user.username[0]|upper }}
+            </div>
+            <div>
+              <p class="font-semibold text-slate-900">
+                {{ user.get_display_name() }}
+              </p>
+              <p class="text-xs text-slate-500">
+                {{ user.role.capitalize() }} • {{ user.username }}
+              </p>
+            </div>
+          </div>
+          <span class="text-xs px-2 py-1 bg-green-100 text-green-700 rounded"
+            >✓ Active</span
+          >
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
 </div>
 
 <!-- Doctors Modal -->
-<div id="doctorsModal" class="modal hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onclick="closeModal('doctorsModal')">
-    <div class="bg-white rounded-xl max-w-2xl w-full max-h-96 overflow-y-auto mx-4" onclick="event.stopPropagation()">
-        <div class="bg-gradient-to-r from-purple-500 to-indigo-600 p-6 sticky top-0">
-            <h2 class="text-2xl font-bold text-white">All Doctors ({{ total_doctors }})</h2>
-            <button onclick="closeModal('doctorsModal')" class="absolute top-4 right-4 text-white hover:bg-white hover:bg-opacity-20 p-2 rounded">✕</button>
-        </div>
-        <div class="p-6 space-y-3">
-            {% set doctors_list = all_approved_users|selectattr('role', 'equalto', 'doctor')|list %}
-            {% for doctor in doctors_list %}
-                <div class="border border-slate-200 rounded-lg p-4 hover:border-purple-400 hover:bg-purple-50 transition" onclick="showUserDetails({{ doctor.id }}, '{{ doctor.get_display_name() }}', 'doctor', '{{ doctor.username }}')">
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-full bg-gradient-to-br from-purple-400 to-indigo-600 text-white flex items-center justify-center font-bold">
-                                {{ doctor.username[0]|upper }}
-                            </div>
-                            <div>
-                                <p class="font-semibold text-slate-900">Dr. {{ doctor.get_display_name() }}</p>
-                                <p class="text-xs text-slate-500">{{ doctor.username }}</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            {% else %}
-                <p class="text-center text-slate-500 py-8">No doctors found</p>
-            {% endfor %}
-        </div>
+<div
+  id="doctorsModal"
+  class="modal hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+  onclick="closeModal('doctorsModal')"
+>
+  <div
+    class="bg-white rounded-xl max-w-2xl w-full max-h-96 overflow-y-auto mx-4"
+    onclick="event.stopPropagation()"
+  >
+    <div
+      class="bg-gradient-to-r from-purple-500 to-indigo-600 p-6 sticky top-0"
+    >
+      <h2 class="text-2xl font-bold text-white">
+        All Doctors ({{ total_doctors }})
+      </h2>
+      <button
+        onclick="closeModal('doctorsModal')"
+        class="absolute top-4 right-4 text-white hover:bg-white hover:bg-opacity-20 p-2 rounded"
+      >
+        ✕
+      </button>
     </div>
+    <div class="p-6 space-y-3">
+      {% set doctors_list = all_approved_users|selectattr('role', 'equalto',
+      'doctor')|list %} {% for doctor in doctors_list %}
+      <div
+        class="border border-slate-200 rounded-lg p-4 hover:border-purple-400 hover:bg-purple-50 transition"
+        onclick="showUserDetails({{ doctor.id }}, '{{ doctor.get_display_name() }}', 'doctor', '{{ doctor.username }}')"
+      >
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <div
+              class="w-10 h-10 rounded-full bg-gradient-to-br from-purple-400 to-indigo-600 text-white flex items-center justify-center font-bold"
+            >
+              {{ doctor.username[0]|upper }}
+            </div>
+            <div>
+              <p class="font-semibold text-slate-900">
+                Dr. {{ doctor.get_display_name() }}
+              </p>
+              <p class="text-xs text-slate-500">{{ doctor.username }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% else %}
+      <p class="text-center text-slate-500 py-8">No doctors found</p>
+      {% endfor %}
+    </div>
+  </div>
 </div>
 
 <!-- Specialists Modal -->
-<div id="specialistsModal" class="modal hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onclick="closeModal('specialistsModal')">
-    <div class="bg-white rounded-xl max-w-2xl w-full max-h-96 overflow-y-auto mx-4" onclick="event.stopPropagation()">
-        <div class="bg-gradient-to-r from-green-500 to-emerald-600 p-6 sticky top-0">
-            <h2 class="text-2xl font-bold text-white">All Specialists ({{ total_specialists }})</h2>
-            <button onclick="closeModal('specialistsModal')" class="absolute top-4 right-4 text-white hover:bg-white hover:bg-opacity-20 p-2 rounded">✕</button>
-        </div>
-        <div class="p-6 space-y-3">
-            {% set specialists_list = all_approved_users|selectattr('role', 'equalto', 'specialist')|list %}
-            {% for specialist in specialists_list %}
-                <div class="border border-slate-200 rounded-lg p-4 hover:border-green-400 hover:bg-green-50 transition" onclick="showUserDetails({{ specialist.id }}, '{{ specialist.get_display_name() }}', 'specialist', '{{ specialist.username }}')">
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-full bg-gradient-to-br from-green-400 to-emerald-600 text-white flex items-center justify-center font-bold">
-                                {{ specialist.username[0]|upper }}
-                            </div>
-                            <div>
-                                <p class="font-semibold text-slate-900">{{ specialist.get_display_name() }}</p>
-                                <p class="text-xs text-slate-500">{{ specialist.username }}</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            {% else %}
-                <p class="text-center text-slate-500 py-8">No specialists found</p>
-            {% endfor %}
-        </div>
+<div
+  id="specialistsModal"
+  class="modal hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+  onclick="closeModal('specialistsModal')"
+>
+  <div
+    class="bg-white rounded-xl max-w-2xl w-full max-h-96 overflow-y-auto mx-4"
+    onclick="event.stopPropagation()"
+  >
+    <div
+      class="bg-gradient-to-r from-green-500 to-emerald-600 p-6 sticky top-0"
+    >
+      <h2 class="text-2xl font-bold text-white">
+        All Specialists ({{ total_specialists }})
+      </h2>
+      <button
+        onclick="closeModal('specialistsModal')"
+        class="absolute top-4 right-4 text-white hover:bg-white hover:bg-opacity-20 p-2 rounded"
+      >
+        ✕
+      </button>
     </div>
+    <div class="p-6 space-y-3">
+      {% set specialists_list = all_approved_users|selectattr('role', 'equalto',
+      'specialist')|list %} {% for specialist in specialists_list %}
+      <div
+        class="border border-slate-200 rounded-lg p-4 hover:border-green-400 hover:bg-green-50 transition"
+        onclick="showUserDetails({{ specialist.id }}, '{{ specialist.get_display_name() }}', 'specialist', '{{ specialist.username }}')"
+      >
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <div
+              class="w-10 h-10 rounded-full bg-gradient-to-br from-green-400 to-emerald-600 text-white flex items-center justify-center font-bold"
+            >
+              {{ specialist.username[0]|upper }}
+            </div>
+            <div>
+              <p class="font-semibold text-slate-900">
+                {{ specialist.get_display_name() }}
+              </p>
+              <p class="text-xs text-slate-500">{{ specialist.username }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% else %}
+      <p class="text-center text-slate-500 py-8">No specialists found</p>
+      {% endfor %}
+    </div>
+  </div>
 </div>
 
 <!-- Prescriptions Modal -->
-<div id="prescriptionsModal" class="modal hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onclick="closeModal('prescriptionsModal')">
-    <div class="bg-white rounded-xl max-w-2xl w-full max-h-96 overflow-y-auto mx-4" onclick="event.stopPropagation()">
-        <div class="bg-gradient-to-r from-cyan-500 to-blue-600 p-6 sticky top-0">
-            <h2 class="text-2xl font-bold text-white">All Prescriptions ({{ total_prescriptions }})</h2>
-            <button onclick="closeModal('prescriptionsModal')" class="absolute top-4 right-4 text-white hover:bg-white hover:bg-opacity-20 p-2 rounded">✕</button>
-        </div>
-        <div class="p-6 space-y-3">
-            {% if doctors_with_prescriptions %}
-                {% for doctor in doctors_with_prescriptions %}
-                    <div class="border-l-4 border-cyan-500 bg-slate-50 rounded-lg p-4">
-                        <p class="font-semibold text-slate-900 mb-2">Dr. {{ doctor.get_display_name() }}</p>
-                        <div class="space-y-2 ml-4">
-                            {% for rx in doctor.prescriptions %}
-                                <div class="bg-white rounded p-2 border border-slate-200">
-                                    <p class="text-sm text-slate-900">💊 {{ rx.document_type.capitalize() }}</p>
-                                    <p class="text-xs text-slate-500">📋 {{ rx.patient_name }}</p>
-                                    <p class="text-xs text-slate-400">{{ rx.uploaded_at.strftime('%b %d, %Y') }}</p>
-                                </div>
-                            {% endfor %}
-                        </div>
-                    </div>
-                {% endfor %}
-            {% else %}
-                <p class="text-center text-slate-500 py-8">No prescriptions found</p>
-            {% endif %}
-        </div>
+<div
+  id="prescriptionsModal"
+  class="modal hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+  onclick="closeModal('prescriptionsModal')"
+>
+  <div
+    class="bg-white rounded-xl max-w-2xl w-full max-h-96 overflow-y-auto mx-4"
+    onclick="event.stopPropagation()"
+  >
+    <div class="bg-gradient-to-r from-cyan-500 to-blue-600 p-6 sticky top-0">
+      <h2 class="text-2xl font-bold text-white">
+        All Prescriptions ({{ total_prescriptions }})
+      </h2>
+      <button
+        onclick="closeModal('prescriptionsModal')"
+        class="absolute top-4 right-4 text-white hover:bg-white hover:bg-opacity-20 p-2 rounded"
+      >
+        ✕
+      </button>
     </div>
+    <div class="p-6 space-y-3">
+      {% if doctors_with_prescriptions %} {% for doctor in
+      doctors_with_prescriptions %}
+      <div class="border-l-4 border-cyan-500 bg-slate-50 rounded-lg p-4">
+        <p class="font-semibold text-slate-900 mb-2">
+          Dr. {{ doctor.get_display_name() }}
+        </p>
+        <div class="space-y-2 ml-4">
+          {% for rx in doctor.prescriptions %}
+          <div class="bg-white rounded p-2 border border-slate-200">
+            <p class="text-sm text-slate-900">
+              💊 {{ rx.document_type.capitalize() }}
+            </p>
+            <p class="text-xs text-slate-500">📋 {{ rx.patient_name }}</p>
+            <p class="text-xs text-slate-400">
+              {{ rx.uploaded_at.strftime('%b %d, %Y') }}
+            </p>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endfor %} {% else %}
+      <p class="text-center text-slate-500 py-8">No prescriptions found</p>
+      {% endif %}
+    </div>
+  </div>
 </div>
 
 <!-- Referrals Modal -->
-<div id="referralsModal" class="modal hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onclick="closeModal('referralsModal')">
-    <div class="bg-white rounded-xl max-w-2xl w-full max-h-96 overflow-y-auto mx-4" onclick="event.stopPropagation()">
-        <div class="bg-gradient-to-r from-teal-500 to-cyan-600 p-6 sticky top-0">
-            <h2 class="text-2xl font-bold text-white">All Referrals ({{ total_referrals }})</h2>
-            <button onclick="closeModal('referralsModal')" class="absolute top-4 right-4 text-white hover:bg-white hover:bg-opacity-20 p-2 rounded">✕</button>
-        </div>
-        <div class="p-6 space-y-3">
-            {% if referrals_summary %}
-                <div class="space-y-2">
-                    {% for r in referrals_summary %}
-                    <div class="p-3 border rounded-lg flex items-center justify-between">
-                        <div>
-                            <p class="text-sm font-semibold">{{ r.doctor }} → {{ r.specialist }}</p>
-                            {% if r.patient %}
-                                <p class="text-xs text-slate-500">Patient: {{ r.patient }}</p>
-                            {% endif %}
-                            <p class="text-xs text-slate-400">{{ r.timestamp }} • Status: {{ r.status }}</p>
-                        </div>
-                        <div>
-                            <button onclick="viewReferral({{ r.id }})" class="px-3 py-1 border rounded-lg text-sm mr-2">View</button>
-                        </div>
-                    </div>
-                    {% endfor %}
-                </div>
-            {% else %}
-                <div class="text-center text-slate-600 py-8">
-                    No referrals found
-                </div>
-            {% endif %}
-        </div>
+<div
+  id="referralsModal"
+  class="modal hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+  onclick="closeModal('referralsModal')"
+>
+  <div
+    class="bg-white rounded-xl max-w-2xl w-full max-h-96 overflow-y-auto mx-4"
+    onclick="event.stopPropagation()"
+  >
+    <div class="bg-gradient-to-r from-teal-500 to-cyan-600 p-6 sticky top-0">
+      <h2 class="text-2xl font-bold text-white">
+        All Referrals ({{ total_referrals }})
+      </h2>
+      <button
+        onclick="closeModal('referralsModal')"
+        class="absolute top-4 right-4 text-white hover:bg-white hover:bg-opacity-20 p-2 rounded"
+      >
+        ✕
+      </button>
     </div>
+    <div class="p-6 space-y-3">
+      {% if referrals_summary %}
+      <div class="space-y-2">
+        {% for r in referrals_summary %}
+        <div class="p-3 border rounded-lg flex items-center justify-between">
+          <div>
+            <p class="text-sm font-semibold">
+              {{ r.doctor }} → {{ r.specialist }}
+            </p>
+            {% if r.patient %}
+            <p class="text-xs text-slate-500">Patient: {{ r.patient }}</p>
+            {% endif %}
+            <p class="text-xs text-slate-400">
+              {{ r.timestamp }} • Status: {{ r.status }}
+            </p>
+          </div>
+          <div>
+            <button
+              onclick="viewReferral({{ r.id }})"
+              class="px-3 py-1 border rounded-lg text-sm mr-2"
+            >
+              View
+            </button>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="text-center text-slate-600 py-8">No referrals found</div>
+      {% endif %}
+    </div>
+  </div>
 </div>
 
 <!-- User Details Modal -->
-<div id="userDetailsModal" class="modal hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onclick="closeModal('userDetailsModal')">
-    <div class="bg-white rounded-xl max-w-md w-full mx-4" onclick="event.stopPropagation()">
-        <div class="bg-gradient-to-r from-slate-700 to-slate-900 p-6">
-            <h2 class="text-2xl font-bold text-white" id="userNameDetail">User Details</h2>
-            <button onclick="closeModal('userDetailsModal')" class="absolute top-4 right-4 text-white hover:bg-white hover:bg-opacity-20 p-2 rounded">✕</button>
-        </div>
-        <div class="p-6 space-y-4">
-            <div id="userDetailsContent" class="space-y-3">
-                <div class="flex items-center gap-3 p-3 bg-slate-50 rounded-lg">
-                    <span class="font-semibold text-slate-700">Role:</span>
-                    <span id="userRole" class="text-slate-600"></span>
-                </div>
-                <div class="flex items-center gap-3 p-3 bg-slate-50 rounded-lg">
-                    <span class="font-semibold text-slate-700">Email:</span>
-                    <span id="userEmail" class="text-slate-600 text-sm break-all"></span>
-                </div>
-                <div class="flex items-center gap-3 p-3 bg-slate-50 rounded-lg">
-                    <span class="font-semibold text-slate-700">City:</span>
-                    <span id="userCity" class="text-slate-600">N/A</span>
-                </div>
-                <div class="flex items-center gap-3 p-3 bg-slate-50 rounded-lg">
-                    <span class="font-semibold text-slate-700">Country:</span>
-                    <span id="userCountry" class="text-slate-600">N/A</span>
-                </div>
-            </div>
-
-            <div class="border-t pt-4 space-y-2">
-                <label class="block font-semibold text-slate-700">Change Role:</label>
-                <select id="roleSelect" class="w-full border border-slate-300 rounded-lg p-2 text-sm">
-                    <option value="">Select new role...</option>
-                    <option value="patient">Patient</option>
-                    <option value="doctor">Doctor</option>
-                    <option value="specialist">Specialist</option>
-                    <option value="admin">Admin</option>
-                </select>
-                <button onclick="applyRoleChange()" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 rounded-lg transition">
-                    Update Role
-                </button>
-            </div>
-
-            <button onclick="removeUserAccount()" class="w-full bg-red-500 hover:bg-red-600 text-white font-semibold py-2 rounded-lg transition">
-                🗑️ Remove User
-            </button>
-        </div>
+<div
+  id="userDetailsModal"
+  class="modal hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+  onclick="closeModal('userDetailsModal')"
+>
+  <div
+    class="bg-white rounded-xl max-w-md w-full mx-4"
+    onclick="event.stopPropagation()"
+  >
+    <div class="bg-gradient-to-r from-slate-700 to-slate-900 p-6">
+      <h2 class="text-2xl font-bold text-white" id="userNameDetail">
+        User Details
+      </h2>
+      <button
+        onclick="closeModal('userDetailsModal')"
+        class="absolute top-4 right-4 text-white hover:bg-white hover:bg-opacity-20 p-2 rounded"
+      >
+        ✕
+      </button>
     </div>
+    <div class="p-6 space-y-4">
+      <div id="userDetailsContent" class="space-y-3">
+        <div class="flex items-center gap-3 p-3 bg-slate-50 rounded-lg">
+          <span class="font-semibold text-slate-700">Role:</span>
+          <span id="userRole" class="text-slate-600"></span>
+        </div>
+        <div class="flex items-center gap-3 p-3 bg-slate-50 rounded-lg">
+          <span class="font-semibold text-slate-700">Email:</span>
+          <span id="userEmail" class="text-slate-600 text-sm break-all"></span>
+        </div>
+        <div class="flex items-center gap-3 p-3 bg-slate-50 rounded-lg">
+          <span class="font-semibold text-slate-700">City:</span>
+          <span id="userCity" class="text-slate-600">N/A</span>
+        </div>
+        <div class="flex items-center gap-3 p-3 bg-slate-50 rounded-lg">
+          <span class="font-semibold text-slate-700">Country:</span>
+          <span id="userCountry" class="text-slate-600">N/A</span>
+        </div>
+      </div>
+
+      <div class="border-t pt-4 space-y-2">
+        <label class="block font-semibold text-slate-700">Change Role:</label>
+        <select
+          id="roleSelect"
+          class="w-full border border-slate-300 rounded-lg p-2 text-sm"
+        >
+          <option value="">Select new role...</option>
+          <option value="patient">Patient</option>
+          <option value="doctor">Doctor</option>
+          <option value="specialist">Specialist</option>
+          <option value="admin">Admin</option>
+        </select>
+        <button
+          onclick="applyRoleChange()"
+          class="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 rounded-lg transition"
+        >
+          Update Role
+        </button>
+      </div>
+
+      <button
+        onclick="removeUserAccount()"
+        class="w-full bg-red-500 hover:bg-red-600 text-white font-semibold py-2 rounded-lg transition"
+      >
+        🗑️ Remove User
+      </button>
+    </div>
+  </div>
 </div>
 
 <script>
-    let currentUserId = null;
+  let currentUserId = null;
 
-    function showUserDetails(userId, name, role, username) {
-        currentUserId = userId;
-        document.getElementById('userNameDetail').textContent = name;
-        document.getElementById('userRole').textContent = role.charAt(0).toUpperCase() + role.slice(1);
-        
-        // Fetch decrypted email from backend
-        document.getElementById('userEmail').textContent = 'Loading...';
-        
-        fetch(`/admin/get-user-email/${userId}`)
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Failed to fetch email');
-                }
-                return response.json();
-            })
-            .then(data => {
-                document.getElementById('userEmail').textContent = data.email || 'N/A';
-            })
-            .catch(error => {
-                console.error('Error fetching email:', error);
-                document.getElementById('userEmail').textContent = 'Error loading email';
-            });
-        
-        openModal('userDetailsModal');
-    }
+  function showUserDetails(userId, name, role, username) {
+    currentUserId = userId;
+    document.getElementById("userNameDetail").textContent = name;
+    document.getElementById("userRole").textContent =
+      role.charAt(0).toUpperCase() + role.slice(1);
 
-    function applyRoleChange() {
-        const newRole = document.getElementById('roleSelect').value;
-        if (!newRole) {
-            alert('Please select a role');
-            return;
+    // Fetch decrypted email from backend
+    document.getElementById("userEmail").textContent = "Loading...";
+
+    fetch(`/admin/get-user-email/${userId}`)
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Failed to fetch email");
         }
-        changeUserRole(currentUserId, newRole);
-    }
+        return response.json();
+      })
+      .then((data) => {
+        document.getElementById("userEmail").textContent = data.email || "N/A";
+      })
+      .catch((error) => {
+        console.error("Error fetching email:", error);
+        document.getElementById("userEmail").textContent =
+          "Error loading email";
+      });
 
-    function removeUserAccount() {
-        removeUser(currentUserId);
+    openModal("userDetailsModal");
+  }
+
+  function applyRoleChange() {
+    const newRole = document.getElementById("roleSelect").value;
+    if (!newRole) {
+      alert("Please select a role");
+      return;
     }
+    changeUserRole(currentUserId, newRole);
+  }
+
+  function removeUserAccount() {
+    removeUser(currentUserId);
+  }
 </script>
 {% endblock %}

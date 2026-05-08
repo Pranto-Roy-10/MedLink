@@ -4,6 +4,10 @@ from datetime import datetime, timedelta
 import os
 import json
 import random
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 from models import db, User, Referral, Message, Document
 from security.hashing import generate_mac, verify_mac, manual_sha256
 from security.rsa import generate_keys, encrypt, decrypt
@@ -42,17 +46,44 @@ def add_system_log(message, status='INFO'):
 
 def auto_rotate_keys_on_login(user):
     """
-    Automatically rotate cryptographic keys on login.
+    Automatically rotate cryptographic keys on login with data re-encryption.
     
-    Generates new RSA and ECC key pairs for enhanced security.
-    Called after every successful login.
+    Process:
+    1. Generate new RSA and ECC keys
+    2. Decrypt all user fields with OLD keys
+    3. Re-encrypt all user fields with NEW keys
+    4. Replace old keys with new keys
+    5. Save to database
+    
+    This ensures email and other encrypted fields remain accessible.
     """
     try:
-        # Generate new RSA keys
+        # Step 1: Keep old keys temporarily
+        old_rsa_keys = user.get_rsa_private_key()
+        
+        # Step 2: Generate new RSA keys
         new_rsa_keys = generate_keys(256)
+        
+        # Step 3: Decrypt all fields with OLD keys
+        old_email = user.get_email()
+        old_phone = user.get_phone()
+        old_address = user.get_address()
+        old_dob = user.get_date_of_birth()
+        
+        # Step 4: Set new RSA keys
         user.set_rsa_keys(new_rsa_keys[0], new_rsa_keys[1])
         
-        # Generate new ECC keys
+        # Step 5: Re-encrypt all fields with NEW keys
+        if old_email:
+            user.encrypted_email = user.encrypt_nid_with_rsa(old_email)
+        if old_phone:
+            user.phone = user.encrypt_nid_with_rsa(old_phone)
+        if old_address:
+            user.address = user.encrypt_nid_with_rsa(old_address)
+        if old_dob:
+            user.date_of_birth = user.encrypt_nid_with_rsa(old_dob)
+        
+        # Step 6: Generate new ECC keys
         try:
             curve = create_test_curve()
             new_ecc_scalar = random.randint(1, 1000)
@@ -62,14 +93,17 @@ def auto_rotate_keys_on_login(user):
         except Exception as e:
             add_system_log(f"ECC key rotation warning: {str(e)}", "WARN")
         
+        # Step 7: Update rotation timestamp and save
+        user.last_key_rotation = datetime.now()
         db.session.commit()
         
         add_system_log(
-            f"🔄 AUTO KEY ROTATION: {user.get_display_name()} | New RSA Public Key: e={new_rsa_keys[0][0]}, n={str(new_rsa_keys[0][1])[:20]}...",
+            f"🔄 KEY ROTATION SUCCESS: {user.get_display_name()} | New RSA keys generated & user data re-encrypted | Email: {old_email}",
             "SUCCESS"
         )
     except Exception as e:
-        add_system_log(f"Auto key rotation failed: {str(e)}", "ERROR")
+        db.session.rollback()
+        add_system_log(f"❌ Key rotation failed: {str(e)}", "ERROR")
     
 def send_otp_email(to_email, otp_code, purpose="login"):
     sender_email = os.environ.get("SMTP_USERNAME")
@@ -176,11 +210,18 @@ def login():
 
             try:
                 user_email = user.get_email()
+                
+                # Check if email is valid before sending OTP
+                if not user_email or not isinstance(user_email, str):
+                    raise Exception(f"User email is invalid or not set: {user_email}")
+                
+                if not user_email.strip():
+                    raise Exception("User email is empty")
 
                 send_otp_email(user_email, challenge_code, "login")
 
                 add_system_log(
-        f"✓ LOGIN STEP 1: {user.get_display_name()} | OTP sent to registered email",
+        f"✓ LOGIN STEP 1: {user.get_display_name()} | OTP sent to registered email: {user_email}",
         "SUCCESS"
     )
 
@@ -188,7 +229,7 @@ def login():
 
             except Exception as e:
                 add_system_log(
-        f"❌ OTP EMAIL FAILED: {str(e)}",
+        f"❌ OTP EMAIL FAILED: {str(e)} | User email: {user.get_email()}",
         "ERROR"
     )
 

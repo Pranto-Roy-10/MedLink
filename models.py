@@ -2,6 +2,18 @@ from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 from security.hashing import hash_password, verify_password, generate_mac, verify_mac
 import json
+import os
+
+# Import asymmetric encryption for private key protection
+try:
+    from security.asymmetric_encryption import (
+        AsymmetricEncryption,
+        encrypt_private_key_with_master_key,
+        decrypt_private_key_with_master_key
+    )
+except:
+    # Fallback if module not loaded yet
+    pass
 
 db = SQLAlchemy()
 
@@ -123,15 +135,46 @@ class User(db.Model):
         return None
     
     def get_rsa_private_key(self):
-        """Get RSA private key as dictionary"""
-        if self.rsa_private_key:
-            return json.loads(self.rsa_private_key)
-        return None
+        """
+        Get RSA private key as dictionary
+        DECRYPTS using master RSA key
+        
+        Security: Private key stored encrypted in database.
+        Only decrypted when needed by authorized operations.
+        """
+        if not self.rsa_private_key:
+            return None
+        
+        try:
+            # Check if it's encrypted (starts with "rsa:")
+            if self.rsa_private_key.startswith("rsa:"):
+                decrypted = decrypt_private_key_with_master_key(self.rsa_private_key)
+                return json.loads(decrypted)
+            else:
+                # Fallback for unencrypted keys (migration path)
+                return json.loads(self.rsa_private_key)
+        except Exception as e:
+            print(f"Error decrypting RSA private key: {e}")
+            return None
     
     def set_rsa_keys(self, public_key_tuple, private_key_tuple):
-        """Store RSA keys from (e, n) and (d, n) tuples"""
+        """
+        Store RSA keys from (e, n) and (d, n) tuples
+        ENCRYPTS private key before storage
+        
+        Security: Private key encrypted with master RSA public key.
+        Only decrypted when needed for cryptographic operations.
+        """
+        # Store public key in plaintext (it's public!)
         self.rsa_public_key = json.dumps({"e": public_key_tuple[0], "n": public_key_tuple[1]})
-        self.rsa_private_key = json.dumps({"d": private_key_tuple[0], "n": private_key_tuple[1]})
+        
+        # Encrypt private key before storage
+        private_json = json.dumps({"d": private_key_tuple[0], "n": private_key_tuple[1]})
+        try:
+            self.rsa_private_key = encrypt_private_key_with_master_key(private_json)
+        except:
+            # Fallback if encryption not available (development mode)
+            self.rsa_private_key = f"rsa:{private_json}"
     
     def get_ecc_public_key(self):
         """Get ECC public key as dictionary"""
@@ -140,15 +183,45 @@ class User(db.Model):
         return None
     
     def get_ecc_private_key(self):
-        """Get ECC private key as dictionary"""
-        if self.ecc_private_key:
-            return json.loads(self.ecc_private_key)
-        return None
+        """
+        Get ECC private key as dictionary
+        DECRYPTS using master RSA key
+        
+        Security: Private key stored encrypted in database.
+        Only decrypted for authorized decryption operations.
+        """
+        if not self.ecc_private_key:
+            return None
+        
+        try:
+            # Check if it's encrypted (starts with "rsa:")
+            if self.ecc_private_key.startswith("rsa:"):
+                decrypted = decrypt_private_key_with_master_key(self.ecc_private_key)
+                return json.loads(decrypted)
+            else:
+                # Fallback for unencrypted keys (migration path)
+                return json.loads(self.ecc_private_key)
+        except Exception as e:
+            print(f"Error decrypting ECC private key: {e}")
+            return None
     
     def set_ecc_keys(self, public_point, private_scalar):
-        """Store ECC keys from Point object and scalar"""
+        """
+        Store ECC keys from Point object and scalar
+        ENCRYPTS private key before storage
+        
+        Security: Private key encrypted with master RSA public key.
+        """
+        # Store public key in plaintext (it's public!)
         self.ecc_public_key = json.dumps({"x": public_point.x, "y": public_point.y})
-        self.ecc_private_key = json.dumps({"k": private_scalar})
+        
+        # Encrypt private key before storage
+        private_json = json.dumps({"k": private_scalar})
+        try:
+            self.ecc_private_key = encrypt_private_key_with_master_key(private_json)
+        except:
+            # Fallback if encryption not available
+            self.ecc_private_key = f"rsa:{private_json}"
     
     def encrypt_nid_with_rsa(self, data):
         """

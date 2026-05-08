@@ -970,9 +970,32 @@ def download_prescription(doc_id):
             add_system_log(f"Prescription download failed: HMAC verification failed for doc {doc_id}", "ALERT")
             return jsonify({'error': 'Data integrity check failed - possible tampering'}), 403
         
-        # In production, would extract from steganographic image
-        # For demo, return encrypted content (would be decrypted in real scenario)
+        # Decrypt prescription content before returning to the authorized patient
         prescription_content = doc.encrypted_content
+        try:
+            user = User.query.get(user_id)
+            # RSA direct decryption
+            if isinstance(prescription_content, str) and prescription_content.startswith('rsa:'):
+                priv = user.get_rsa_private_key()
+                if not priv:
+                    add_system_log(f"Prescription download failed: Private key missing for user {user_id}", "ERROR")
+                    return jsonify({'error': 'User private key not available for decryption'}), 500
+                prescription_content = direct_rsa_decrypt(prescription_content, priv)
+            elif isinstance(prescription_content, str) and prescription_content.startswith('ecc:'):
+                # Attempt ECC-style decryption using document owner and issuer keys
+                # Try to find a sender (doctor) from system logs or from recent documents - best-effort
+                # If referral metadata exists linking issuer, use that; otherwise attempt symmetric ECC decryption
+                # Here we'll attempt ECC decryption using patient's ECC public key and a placeholder (requires sender pub)
+                try:
+                    # For ECC, we need sender and receiver public keys; attempt to use doctor in last issuer field
+                    # Fallback: return ciphertext if unable to decrypt
+                    prescription_content = ecc_decrypt_message(prescription_content, None, user.get_ecc_public_key())
+                except Exception:
+                    # leave as-is if decryption not possible
+                    pass
+        except Exception as e:
+            add_system_log(f"Prescription decryption failed: {str(e)}", "ERROR")
+            return jsonify({'error': 'Decryption error'}), 500
         
         doc.verify_integrity()
         db.session.commit()

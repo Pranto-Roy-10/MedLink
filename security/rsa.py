@@ -271,4 +271,13 @@ def rsa_decrypt_hex(ciphertext_hex, private_key):
     """
     ciphertext_int = int(ciphertext_hex, 16)
     message_int = decrypt(ciphertext_int, private_key)
-    return bytes.fromhex(hex(message_int)[2:]).decode('utf-8')
+    # Convert decrypted integer back to hex string
+    hex_str = hex(message_int)[2:]
+    # Ensure even length for fromhex (pad leading zero if needed)
+    if len(hex_str) % 2:
+        hex_str = '0' + hex_str
+    try:
+        return bytes.fromhex(hex_str).decode('utf-8', errors='ignore')
+    except Exception:
+        # Fallback: return decimal string if binary decode fails
+        return str(message_int)

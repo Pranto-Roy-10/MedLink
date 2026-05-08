@@ -1676,18 +1676,24 @@ def admin_dashboard():
     doctors = User.query.filter_by(role='doctor', is_approved=True).all()
     
     for doctor in doctors:
-        # Get prescriptions created by this doctor (user_id = doctor.id)
+        # Get prescriptions CREATED by this doctor (creator_id = doctor.id)
         prescriptions = Document.query.filter_by(
-            user_id=doctor.id,
+            creator_id=doctor.id,
             document_type='prescription'
         ).all()
         
-        # Format prescriptions 
+        # Format prescriptions with patient info and details
         formatted_prescriptions = []
         for rx in prescriptions:
-            # Extract patient name from encrypted content if possible
-            rx.patient_name = 'Patient - ' + rx.encrypted_content[:30] if rx.encrypted_content else 'Unknown Patient'
-            formatted_prescriptions.append(rx)
+            patient = User.query.get(rx.user_id)
+            formatted_prescriptions.append({
+                'id': rx.id,
+                'medication': rx.prescription_details.get('medication', 'N/A') if rx.prescription_details else 'N/A',
+                'dosage': rx.prescription_details.get('dosage', 'N/A') if rx.prescription_details else 'N/A',
+                'instructions': rx.prescription_details.get('instructions', 'N/A') if rx.prescription_details else 'N/A',
+                'patient_name': patient.get_display_name() if patient else 'Unknown Patient',
+                'date': rx.uploaded_at.strftime('%b %d, %Y') if rx.uploaded_at else 'N/A'
+            })
         
         doctor.prescriptions = formatted_prescriptions
         if prescriptions:  # Only show doctors who have issued prescriptions
@@ -1957,10 +1963,18 @@ def create_prescription():
             
             doc = Document(
                 user_id=patient_id,
+                creator_id=user_id,  # Track which doctor created this
                 document_type='prescription',
                 encrypted_content=encrypted_prescription,
                 mac_tag=mac_tag,
                 is_verified=True,
+                prescription_details={
+                    'medication': medication,
+                    'dosage': dosage,
+                    'instructions': instructions,
+                    'issued_by': user.get_display_name(),
+                    'date': datetime.now().strftime('%Y-%m-%d %H:%M')
+                },
                 uploaded_at=datetime.now()
             )
             

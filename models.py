@@ -367,13 +367,17 @@ class Document(db.Model):
     
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
+    creator_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True, index=True)  # Doctor/creator
     document_type = db.Column(db.String(50), nullable=False)  # 'prescription', 'lab_result', 'report'
     encrypted_content = db.Column(db.Text, nullable=False)
     mac_tag = db.Column(db.String(255), nullable=True)
     is_verified = db.Column(db.Boolean, default=False)
+    # For prescriptions: store details for admin viewing
+    prescription_details = db.Column(db.JSON, nullable=True)  # {medication, dosage, instructions}
     uploaded_at = db.Column(db.DateTime, default=datetime.now)
     
-    user = db.relationship('User', backref='documents')
+    user = db.relationship('User', backref='documents', foreign_keys=[user_id])
+    creator = db.relationship('User', foreign_keys=[creator_id])
     
     def verify_integrity(self):
         """

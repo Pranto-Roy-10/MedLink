@@ -239,6 +239,7 @@ def register():
         role = request.form.get('role', 'patient')
         nid = request.form.get('nid')
         blood_group = request.form.get('blood_group')
+        license_number = request.form.get('license_number')
         
         # Validation
         if not display_name or not email or not password or not confirm_password:
@@ -288,6 +289,10 @@ def register():
             except:
                 pass
             
+            # Store license number if provided (doctors/specialists)
+            if license_number and role in ('doctor', 'specialist'):
+                user.license_number = license_number.strip()
+
             # Encrypt NID if provided
             if nid:
                 user.encrypted_nid = user.encrypt_nid_with_rsa(nid)

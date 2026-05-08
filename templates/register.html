@@ -138,6 +138,23 @@
                     </p>
                 </div>
 
+                <!-- License Number (doctors / specialists) -->
+                <div id="license_field" style="display:none;">
+                    <label for="license_number" class="block text-sm font-semibold text-slate-900 mb-2">
+                        License Number (for Doctors / Specialists)
+                    </label>
+                    <input
+                        type="text"
+                        id="license_number"
+                        name="license_number"
+                        class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition"
+                        placeholder="Medical license or registration number"
+                    >
+                    <p class="text-xs text-slate-500 mt-1">
+                        Your license will be shared with admins for verification before account approval.
+                    </p>
+                </div>
+
                 <!-- Blood Group -->
                 <div>
                     <label for="blood_group" class="block text-sm font-semibold text-slate-900 mb-2">
@@ -174,6 +191,23 @@
                 >
                     Create Secure Account
                 </button>
+                <script>
+                    // Toggle license field visibility when role changes
+                    (function(){
+                        const roleEl = document.getElementById('role');
+                        const licenseField = document.getElementById('license_field');
+                        function toggle(){
+                            const v = roleEl.value;
+                            if(v === 'doctor' || v === 'specialist'){
+                                licenseField.style.display = '';
+                            } else {
+                                licenseField.style.display = 'none';
+                            }
+                        }
+                        roleEl.addEventListener('change', toggle);
+                        toggle();
+                    })();
+                </script>
             </form>
 
             <!-- Login Link -->

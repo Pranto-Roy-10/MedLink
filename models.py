@@ -46,6 +46,9 @@ class User(db.Model):
     encrypted_nid = db.Column(db.Text, nullable=True)
     encrypted_blood_group = db.Column(db.Text, nullable=True)
     nid_mac = db.Column(db.String(255), nullable=True)
+    # Professional license (doctors / specialists)
+    license_number = db.Column(db.String(120), nullable=True, index=True)
+    license_verified = db.Column(db.Boolean, default=False)
     
     # Key Management
     last_key_rotation = db.Column(db.DateTime, nullable=True)

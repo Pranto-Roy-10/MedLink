@@ -810,8 +810,8 @@
         <div class="space-y-2 ml-4">
           {% for rx in doctor.prescriptions %}
           <div class="bg-white rounded p-2 border border-slate-200">
-            <p class="text-sm text-slate-900">
-              💊 {{ rx.document_type.capitalize() }}
+            <p class="text-sm text-slate-900 font-semibold">
+              💊 {{ rx.document_type.capitalize() }} #{{ rx.id }}
             </p>
             <p class="text-xs text-slate-500">📋 {{ rx.patient_name }}</p>
             <p class="text-xs text-slate-400">

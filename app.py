@@ -39,6 +39,37 @@ def add_system_log(message, status='INFO'):
     if len(system_log) > 50:  # Keep last 50 entries
         system_log.pop(0)
     print(log_entry)
+
+def auto_rotate_keys_on_login(user):
+    """
+    Automatically rotate cryptographic keys on login.
+    
+    Generates new RSA and ECC key pairs for enhanced security.
+    Called after every successful login.
+    """
+    try:
+        # Generate new RSA keys
+        new_rsa_keys = generate_keys(256)
+        user.set_rsa_keys(new_rsa_keys[0], new_rsa_keys[1])
+        
+        # Generate new ECC keys
+        try:
+            curve = create_test_curve()
+            new_ecc_scalar = random.randint(1, 1000)
+            base_point = Point(0, 1, curve)
+            new_ecc_public = curve.scalar_multiplication(new_ecc_scalar, base_point)
+            user.set_ecc_keys(new_ecc_public, new_ecc_scalar)
+        except Exception as e:
+            add_system_log(f"ECC key rotation warning: {str(e)}", "WARN")
+        
+        db.session.commit()
+        
+        add_system_log(
+            f"🔄 AUTO KEY ROTATION: {user.get_display_name()} | New RSA Public Key: e={new_rsa_keys[0][0]}, n={str(new_rsa_keys[0][1])[:20]}...",
+            "SUCCESS"
+        )
+    except Exception as e:
+        add_system_log(f"Auto key rotation failed: {str(e)}", "ERROR")
     
 def send_otp_email(to_email, otp_code, purpose="login"):
     sender_email = os.environ.get("SMTP_USERNAME")
@@ -137,6 +168,9 @@ def login():
                     f"✓ ADMIN LOGIN BYPASS: {user.get_display_name()} | OTP skipped for admin",
                     "SUCCESS"
                 )
+                
+                # Auto-rotate keys on successful login
+                auto_rotate_keys_on_login(user)
 
                 return redirect(url_for('admin_dashboard'))
 
@@ -203,6 +237,9 @@ def verify_2fa():
             
             add_system_log(f"✓ 2FA VERIFIED: {user.get_display_name()} | Challenge Code Matched", "SUCCESS")
             add_system_log(f"✓ LOGIN STEP 2: Signature Verified | RSA Challenge Response Authenticated", "SUCCESS")
+            
+            # Auto-rotate keys on successful login
+            auto_rotate_keys_on_login(user)
             
             # Redirect admin users to admin dashboard, others to regular dashboard
             if user.role == 'admin':

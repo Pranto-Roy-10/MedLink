@@ -554,9 +554,28 @@
             <button onclick="closeModal('referralsModal')" class="absolute top-4 right-4 text-white hover:bg-white hover:bg-opacity-20 p-2 rounded">✕</button>
         </div>
         <div class="p-6 space-y-3">
-            <div class="text-center text-slate-600 py-8">
-                Referral details coming soon...
-            </div>
+            {% if referrals_summary %}
+                <div class="space-y-2">
+                    {% for r in referrals_summary %}
+                    <div class="p-3 border rounded-lg flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-semibold">{{ r.doctor }} → {{ r.specialist }}</p>
+                            {% if r.patient %}
+                                <p class="text-xs text-slate-500">Patient: {{ r.patient }}</p>
+                            {% endif %}
+                            <p class="text-xs text-slate-400">{{ r.timestamp }} • Status: {{ r.status }}</p>
+                        </div>
+                        <div>
+                            <button onclick="viewReferral({{ r.id }})" class="px-3 py-1 border rounded-lg text-sm mr-2">View</button>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="text-center text-slate-600 py-8">
+                    No referrals found
+                </div>
+            {% endif %}
         </div>
     </div>
 </div>

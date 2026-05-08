@@ -10,7 +10,7 @@ from security.rsa import generate_keys, encrypt, decrypt
 from security.ecc import EllipticCurve, Point, create_test_curve
 from security.encryption_utils import (
     ecc_encrypt_message, ecc_decrypt_message,
-    encrypt_email_rsa, decrypt_email_rsa
+    encrypt_email_rsa, decrypt_email_rsa, direct_rsa_encrypt, direct_rsa_decrypt
 )
 import smtplib
 from email.mime.text import MIMEText
@@ -120,6 +120,25 @@ def login():
             session['2fa_challenge'] = challenge_code
             session['2fa_user_id'] = user.id
             session['2fa_timestamp'] = datetime.now().timestamp()
+            # If the user is an admin, skip sending OTP email and complete login immediately
+            if getattr(user, 'role', None) == 'admin':
+                session['user_id'] = user.id
+                session['user_email'] = user.username
+                session['user_role'] = user.role
+                session['user_name'] = user.get_display_name()
+
+                # Clear any pending 2FA session data
+                session.pop('pending_2fa_user_id', None)
+                session.pop('2fa_challenge', None)
+                session.pop('2fa_user_id', None)
+                session.pop('2fa_timestamp', None)
+
+                add_system_log(
+                    f"✓ ADMIN LOGIN BYPASS: {user.get_display_name()} | OTP skipped for admin",
+                    "SUCCESS"
+                )
+
+                return redirect(url_for('admin_dashboard'))
 
             try:
                 user_email = user.get_email()
@@ -382,7 +401,12 @@ def dashboard():
     
     # Get unread message count
     unread_count = Message.query.filter_by(receiver_id=user_id, is_read=False).count()
-    
+
+    # If specialist, fetch pending referrals for quick actions
+    pending_referrals = []
+    if user.role == 'specialist':
+        pending_referrals = Referral.query.filter_by(receiver_id=user.id, status='pending').order_by(Referral.timestamp.desc()).all()
+
     return render_template('dashboard.html', 
                          user=user,
                          user_name=user.get_display_name(),
@@ -391,7 +415,8 @@ def dashboard():
                          recent_activity=recent_activity,
                          system_integrity=system_integrity,
                          is_approved=user.is_approved,
-                         unread_messages=unread_count)
+                         unread_messages=unread_count,
+                         pending_referrals=pending_referrals)
 
 @app.route('/logout')
 def logout():
@@ -773,18 +798,22 @@ def issue_referral():
         return jsonify({'error': 'Receiver not found'}), 404
     
     try:
-        # Hash referral data
+        # Hash referral data (for logging/audit)
         referral_hash = manual_sha256(referral_text)
-        
-        # Generate HMAC for integrity
+
+        # Encrypt referral content using recipient's RSA public key (direct asymmetric)
+        receiver_rsa_pub = receiver.get_rsa_public_key()
+        encrypted_content = direct_rsa_encrypt(referral_text, receiver_rsa_pub)
+
+        # Generate HMAC for integrity over the ciphertext
         hmac_key = f"referral_{sender_id}"
-        mac_tag = generate_mac(hmac_key, referral_text)
-        
-        # Create referral
+        mac_tag = generate_mac(hmac_key, encrypted_content)
+
+        # Create referral (store only ciphertext)
         referral = Referral(
             sender_id=sender_id,
             receiver_id=int(receiver_id),
-            encrypted_content=referral_text,
+            encrypted_content=encrypted_content,
             mac_tag=mac_tag,
             is_verified=True,
             referral_type='referral',
@@ -805,6 +834,111 @@ def issue_referral():
         
     except Exception as e:
         add_system_log(f"Referral creation failed: {str(e)}", "ERROR")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/accept_referral/<int:referral_id>', methods=['POST'])
+def accept_referral(referral_id):
+    """Accept a referral (specialist action)."""
+    if 'user_id' not in session:
+        return jsonify({'error': 'Not authenticated'}), 401
+
+    user = User.query.get(session.get('user_id'))
+    ref = Referral.query.get(referral_id)
+
+    if not ref:
+        return jsonify({'error': 'Referral not found'}), 404
+
+    # Only the intended receiver (specialist) or admin can accept
+    if user.id != ref.receiver_id and user.role != 'admin':
+        return jsonify({'error': 'Not authorized to accept this referral'}), 403
+
+    try:
+        ref.status = 'accepted'
+        ref.is_verified = True
+        db.session.commit()
+
+        add_system_log(
+            f"✓ REFERRAL ACCEPTED: {user.get_display_name()} accepted referral {referral_id}",
+            "SUCCESS"
+        )
+
+        return jsonify({'success': True, 'referral_id': referral_id}), 200
+    except Exception as e:
+        db.session.rollback()
+        add_system_log(f"Referral accept failed: {str(e)}", "ERROR")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/specialist/referrals')
+def specialist_referrals():
+    """Return JSON list of referrals for the logged-in specialist."""
+    if 'user_id' not in session:
+        return jsonify({'error': 'Not authenticated'}), 401
+
+    user = User.query.get(session.get('user_id'))
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+
+    if user.role != 'specialist' and user.role != 'admin':
+        return jsonify({'error': 'Not authorized'}), 403
+
+    refs = Referral.query.filter_by(receiver_id=user.id).order_by(Referral.timestamp.desc()).all()
+
+    out = []
+    for r in refs:
+        out.append({
+            'id': r.id,
+            'from': r.sender.get_display_name() if r.sender else 'Unknown',
+            'status': r.status,
+            'is_verified': bool(r.is_verified),
+            'timestamp': r.timestamp.strftime('%Y-%m-%d %I:%M %p') if r.timestamp else None
+        })
+
+    return jsonify({'referrals': out}), 200
+
+
+@app.route('/referral/<int:referral_id>/view')
+def view_referral(referral_id):
+    """Return decrypted referral content to authorized users (sender, receiver, admin)."""
+    if 'user_id' not in session:
+        return jsonify({'error': 'Not authenticated'}), 401
+
+    user = User.query.get(session.get('user_id'))
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+
+    ref = Referral.query.get(referral_id)
+    if not ref:
+        return jsonify({'error': 'Referral not found'}), 404
+
+    # Only allow sender, receiver, or admin
+    if user.role != 'admin' and user.id not in (ref.sender_id, ref.receiver_id):
+        return jsonify({'error': 'Not authorized to view this referral'}), 403
+
+    content = ref.encrypted_content or ''
+    try:
+        # If it's RSA encrypted, decrypt with the current user's private key
+        if content.startswith('rsa:'):
+            priv = user.get_rsa_private_key()
+            if not priv:
+                return jsonify({'error': 'Private key not available for decryption'}), 500
+            decrypted = direct_rsa_decrypt(content, priv)
+        elif content.startswith('ecc:'):
+            # try ECC decryption using both parties' public keys
+            sender = User.query.get(ref.sender_id)
+            receiver = User.query.get(ref.receiver_id)
+            if sender and receiver:
+                decrypted = ecc_decrypt_message(content, sender.get_ecc_public_key(), receiver.get_ecc_public_key())
+            else:
+                decrypted = '[Cannot decrypt - users missing]'
+        else:
+            # not encrypted
+            decrypted = content
+
+        return jsonify({'success': True, 'content': decrypted}), 200
+    except Exception as e:
+        add_system_log(f"Referral view failed: {str(e)}", "ERROR")
         return jsonify({'error': str(e)}), 500
 
 
@@ -1488,6 +1622,25 @@ def admin_dashboard():
     
     # Get system logs
     system_logs = system_log
+    # Get recent referrals for admin overview
+    referrals = Referral.query.order_by(Referral.timestamp.desc()).limit(50).all()
+    referrals_summary = []
+    for r in referrals:
+        sender = User.query.get(r.sender_id)
+        receiver = User.query.get(r.receiver_id)
+        # Try to get patient name from stored patient_id if available, else None
+        patient_name = None
+        if hasattr(r, 'patient_id') and r.patient_id:
+            p = User.query.get(r.patient_id)
+            patient_name = p.get_display_name() if p else None
+        referrals_summary.append({
+            'id': r.id,
+            'doctor': sender.get_display_name() if sender else 'Unknown',
+            'specialist': receiver.get_display_name() if receiver else 'Unknown',
+            'patient': patient_name,
+            'status': r.status,
+            'timestamp': r.timestamp.strftime('%Y-%m-%d %I:%M %p') if r.timestamp else ''
+        })
     
     add_system_log(f"Admin panel accessed by {admin_user.get_display_name()}", "INFO")
     
@@ -1504,7 +1657,8 @@ def admin_dashboard():
                          all_approved_users=all_approved_users,
                          all_specialists=all_specialists,
                          doctors_with_prescriptions=doctors_with_prescriptions,
-                         system_logs=system_logs)
+                         system_logs=system_logs,
+                         referrals_summary=referrals_summary)
 
 
 @app.route('/admin/approve/<int:user_id>', methods=['POST'])
@@ -1533,6 +1687,42 @@ def approve_user(user_id):
     )
     
     return jsonify({'success': True, 'message': f'User {user_to_approve.display_name} approved'}), 200
+
+
+@app.route('/admin/referrals/json')
+def admin_referrals_json():
+    if 'user_id' not in session:
+        add_system_log('Admin referrals JSON access denied - not authenticated', 'WARN')
+        # Provide debug info to help client diagnose cookie/session issues in dev
+        debug_info = {
+            'cookies': dict(request.cookies),
+            'headers': {k: v for k, v in request.headers.items() if k in ['Host', 'Referer', 'User-Agent', 'Cookie']}
+        }
+        return jsonify({'error': 'Not authenticated', 'debug': debug_info}), 401
+    admin = User.query.get(session.get('user_id'))
+    if not admin or admin.role != 'admin':
+        return jsonify({'error': 'Admin role required'}), 403
+
+    add_system_log(f'Admin referrals JSON accessed by admin {admin.get_display_name()}', 'INFO')
+    referrals = Referral.query.order_by(Referral.timestamp.desc()).limit(100).all()
+    out = []
+    for r in referrals:
+        sender = User.query.get(r.sender_id)
+        receiver = User.query.get(r.receiver_id)
+        patient_name = None
+        if hasattr(r, 'patient_id') and getattr(r, 'patient_id'):
+            p = User.query.get(r.patient_id)
+            patient_name = p.get_display_name() if p else None
+        out.append({
+            'id': r.id,
+            'doctor': sender.get_display_name() if sender else 'Unknown',
+            'specialist': receiver.get_display_name() if receiver else 'Unknown',
+            'patient': patient_name,
+            'status': r.status,
+            'timestamp': r.timestamp.strftime('%Y-%m-%d %I:%M %p') if r.timestamp else ''
+        })
+
+    return jsonify({'referrals': out}), 200
 
 
 @app.route('/admin/reject/<int:user_id>', methods=['POST'])
@@ -1774,15 +1964,19 @@ def refer_specialist():
             
             # Create referral content
             referral_content = f"REFERRAL\nPatient: {patient.get_display_name()}\nReason: {referral_reason}\nHistory: {medical_history}\nReferred by: {user.get_display_name()}\nDate: {datetime.now().strftime('%Y-%m-%d %H:%M')}"
-            
-            # Create encrypted referral
+
+            # Encrypt referral content using specialist's RSA public key
+            specialist_rsa_pub = specialist.get_rsa_public_key()
+            encrypted_content = direct_rsa_encrypt(referral_content, specialist_rsa_pub)
+
+            # Generate HMAC for integrity over the ciphertext
             mac_key = f"referral_{user_id}"
-            mac_tag = generate_mac(mac_key, referral_content)
-            
+            mac_tag = generate_mac(mac_key, encrypted_content)
+
             referral = Referral(
                 sender_id=user_id,
                 receiver_id=specialist_id,
-                encrypted_content=referral_content,
+                encrypted_content=encrypted_content,
                 mac_tag=mac_tag,
                 is_verified=True,
                 referral_type='specialist_referral',

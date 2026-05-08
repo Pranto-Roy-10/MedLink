@@ -41,13 +41,7 @@
                     </svg>
                 </a>
 
-                <!-- Settings -->
-                <a href="#" class="flex items-center justify-center w-12 h-12 rounded-lg text-slate-600 hover:bg-slate-100 transition" title="Settings">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                    </svg>
-                </a>
+                <!-- Settings removed per UX request -->
             </nav>
 
             <!-- Logout -->
@@ -205,6 +199,25 @@
                             </h2>
                             
                             <div class="space-y-4">
+                                {% if user_role == 'specialist' and pending_referrals %}
+                                <div class="mb-6">
+                                    <h3 class="text-lg font-semibold text-slate-900 mb-3">Pending Referrals</h3>
+                                    <div class="space-y-3">
+                                        {% for ref in pending_referrals %}
+                                        <div class="p-4 border rounded-lg flex items-center justify-between">
+                                            <div>
+                                                <p class="text-sm font-semibold">From: {{ ref.sender.get_display_name() }}</p>
+                                                <p class="text-xs text-slate-600">Sent: {{ ref.timestamp.strftime('%Y-%m-%d %I:%M %p') }}</p>
+                                            </div>
+                                                <div class="flex items-center gap-2">
+                                                    <button onclick="viewReferral({{ ref.id }})" class="px-3 py-1 bg-white border rounded-lg text-sm">View</button>
+                                                    <button onclick="acceptReferral({{ ref.id }})" class="px-4 py-2 bg-teal-600 text-white rounded-lg text-sm font-semibold hover:bg-teal-700">Accept</button>
+                                                </div>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                {% endif %}
                                 {% if recent_activity %}
                                     {% for activity in recent_activity %}
                                     <div class="flex items-start space-x-4 pb-4 border-b border-slate-100 last:border-b-0 last:pb-0">
@@ -332,9 +345,25 @@
                                     </button>
                                     {% endif %}
                                 {% else %}
-                                <button class="w-full py-2 border border-slate-200 text-slate-700 rounded-lg text-sm font-semibold hover:bg-slate-50 transition">
-                                    View Security Settings
-                                </button>
+                                    {% if user_role == 'specialist' %}
+                                        {% if is_approved %}
+                                        <a href="{{ url_for('create_prescription') }}" class="w-full block py-3 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg text-sm font-semibold transition text-center">
+                                            💊 Create Prescription
+                                        </a>
+                                        <button onclick="openReferralsModal()" class="mt-3 w-full py-3 border border-slate-200 text-slate-700 rounded-lg text-sm font-semibold hover:bg-slate-50 transition">
+                                            📋 See All Referrals
+                                        </button>
+                                        {% else %}
+                                        <button disabled class="w-full block py-3 bg-gray-400 cursor-not-allowed text-white rounded-lg text-sm font-semibold text-center opacity-60">
+                                            💊 Create Prescription (Pending Approval)
+                                        </button>
+                                        <button disabled class="mt-3 w-full py-3 bg-gray-400 cursor-not-allowed text-white rounded-lg text-sm font-semibold text-center opacity-60">
+                                            📋 See All Referrals (Pending Approval)
+                                        </button>
+                                        {% endif %}
+                                    {% else %}
+                                    <!-- Other roles (admin) - no settings button shown -->
+                                    {% endif %}
                                 {% endif %}
                             </div>
                         </div>
@@ -432,6 +461,19 @@
     </div>
 </div>
 
+<!-- Specialist Referrals Modal -->
+<div id="specialistReferralsModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onclick="if (event.target.id === 'specialistReferralsModal') closeReferralsModal()">
+    <div class="bg-white rounded-2xl p-8 max-w-3xl w-full mx-4">
+        <h3 class="text-2xl font-bold text-slate-900 mb-4">All Referrals</h3>
+        <div id="specialistReferralsList" class="space-y-4 max-h-96 overflow-auto">
+            <!-- Populated by JS -->
+        </div>
+        <div class="mt-6 text-right">
+            <button onclick="closeReferralsModal()" class="px-4 py-2 border rounded-lg">Close</button>
+        </div>
+    </div>
+</div>
+
 <script>
 // Modal Functions
 function showReferralModal() {
@@ -458,6 +500,63 @@ function showAttackSimulator() {
 
 function closeAttackModal() {
     document.getElementById('attackModal').classList.add('hidden');
+}
+
+// Accept referral via API
+async function acceptReferral(referralId) {
+    if (!confirm('Accept this referral?')) return;
+    try {
+        const resp = await fetch(`/accept_referral/${referralId}`, { method: 'POST' });
+        const data = await resp.json();
+        if (data.success) {
+            alert('Referral accepted');
+            location.reload();
+        } else {
+            alert('Error: ' + (data.error || 'Unknown'));
+        }
+    } catch (err) {
+        alert('Error: ' + err.message);
+    }
+}
+
+function openReferralsModal() {
+    document.getElementById('specialistReferralsModal').classList.remove('hidden');
+    loadSpecialistReferrals();
+}
+
+function closeReferralsModal() {
+    document.getElementById('specialistReferralsModal').classList.add('hidden');
+}
+
+async function loadSpecialistReferrals() {
+    try {
+        const resp = await fetch('/specialist/referrals');
+        const data = await resp.json();
+        const container = document.getElementById('specialistReferralsList');
+        container.innerHTML = '';
+        if (!data.referrals || data.referrals.length === 0) {
+            container.innerHTML = '<p class="text-sm text-slate-600">No referrals found.</p>';
+            return;
+        }
+        data.referrals.forEach(r => {
+            const div = document.createElement('div');
+            div.className = 'p-4 border rounded-lg flex items-center justify-between';
+            div.innerHTML = `
+                <div>
+                    <p class="text-sm font-semibold">From: ${r.from}</p>
+                    <p class="text-xs text-slate-600">Sent: ${r.timestamp}</p>
+                    <p class="text-xs text-slate-600">Status: ${r.status}</p>
+                </div>
+                <div>
+                    ${r.status === 'pending' ? `<button onclick="viewReferral(${r.id})" class="px-3 py-1 bg-white border rounded-lg text-sm mr-2">View</button><button onclick="acceptReferral(${r.id})" class="px-4 py-2 bg-teal-600 text-white rounded-lg">Accept</button>` : `<button onclick="viewReferral(${r.id})" class="px-3 py-1 bg-white border rounded-lg text-sm mr-2">View</button><span class="text-sm text-slate-500">${r.status}</span>`}
+                </div>
+            `;
+            container.appendChild(div);
+        });
+    } catch (err) {
+        console.error(err);
+        alert('Failed to load referrals');
+    }
 }
 
 // Form Submissions
@@ -533,6 +632,36 @@ async function submitAttack(event) {
     } catch (error) {
         alert('Error simulating attack: ' + error.message);
     }
+}
+
+// View referral details (fetch decrypted content)
+async function viewReferral(referralId) {
+    try {
+        const resp = await fetch(`/referral/${referralId}/view`);
+        const data = await resp.json();
+        if (data.success) {
+            // Show in a modal-like alert box
+            showReferralDetails(data.content);
+        } else {
+            alert('Error: ' + (data.error || 'Unable to view referral'));
+        }
+    } catch (err) {
+        alert('Error: ' + err.message);
+    }
+}
+
+function showReferralDetails(text) {
+    // Create a simple modal to show details
+    let m = document.getElementById('referralDetailsModal');
+    if (!m) {
+        m = document.createElement('div');
+        m.id = 'referralDetailsModal';
+        m.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+        m.innerHTML = `<div class="bg-white rounded-2xl p-6 max-w-2xl w-full mx-4"><h3 class="text-xl font-bold mb-2">Referral Details</h3><pre id="referralDetailsContent" class="whitespace-pre-wrap text-sm text-slate-700"></pre><div class="mt-4 text-right"><button id="closeReferralDetails" class="px-4 py-2 border rounded-lg">Close</button></div></div>`;
+        document.body.appendChild(m);
+        document.getElementById('closeReferralDetails').addEventListener('click', () => { m.remove(); });
+    }
+    document.getElementById('referralDetailsContent').textContent = text;
 }
 
 async function loadDocuments() {

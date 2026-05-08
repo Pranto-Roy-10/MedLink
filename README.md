@@ -354,3 +354,28 @@ Proprietary - MedLink Medical Platform
 ## Support
 
 For issues or questions, please contact the development team.
+
+## Email OTP Setup
+
+This project uses Gmail SMTP for registration and login OTP verification.
+
+Before running the project, configure environment variables:
+
+### PowerShell
+
+```powershell
+$env:SMTP_USERNAME="yourgmail@gmail.com"
+$env:SMTP_PASSWORD="your_16_character_google_app_password"
+```
+
+### Run Project
+
+```powershell
+python app.py
+```
+
+### Important
+
+- Use Google App Passwords
+- Do NOT use your normal Gmail password
+- Do NOT push credentials to GitHub

@@ -276,3 +276,34 @@ def generate_data_hmac(ciphertext, key):
         key = key.encode()
     
     return hmac.new(key, ciphertext, hashlib.sha256).hexdigest()
+
+
+# Module-level wrapper functions for backwards compatibility
+def encrypt_private_key_with_master_key(private_key_str):
+    """
+    Module-level wrapper for AsymmetricEncryption.encrypt_private_key_with_master_key()
+    
+    Encrypt an ECC/RSA private key using master RSA public key before storage in database
+    
+    Args:
+        private_key_str (str): Private key JSON to encrypt
+    
+    Returns:
+        str: "rsa:encrypted_private_key"
+    """
+    return AsymmetricEncryption.encrypt_private_key_with_master_key(private_key_str)
+
+
+def decrypt_private_key_with_master_key(encrypted_key_str):
+    """
+    Module-level wrapper for AsymmetricEncryption.decrypt_private_key_with_master_key()
+    
+    Decrypt a private key using master RSA private key retrieved from database
+    
+    Args:
+        encrypted_key_str (str): "rsa:encrypted_private_key"
+    
+    Returns:
+        str: Decrypted private key JSON
+    """
+    return AsymmetricEncryption.decrypt_private_key_with_master_key(encrypted_key_str)

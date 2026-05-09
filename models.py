@@ -124,14 +124,37 @@ class User(db.Model):
     
     def get_rsa_private_key(self):
         """Get RSA private key as dictionary"""
-        if self.rsa_private_key:
-            return json.loads(self.rsa_private_key)
-        return None
+        if not self.rsa_private_key:
+            return None
+        
+        try:
+            # Check if key is encrypted (starts with "rsa:")
+            if self.rsa_private_key.startswith("rsa:"):
+                from security.asymmetric_encryption import AsymmetricEncryption
+                decrypted = AsymmetricEncryption.decrypt_private_key_with_master_key(self.rsa_private_key)
+                return json.loads(decrypted)
+            else:
+                # Fallback for unencrypted keys (backwards compatibility)
+                return json.loads(self.rsa_private_key)
+        except Exception as e:
+            import sys
+            print(f"[ERROR] Could not decrypt private key: {e}", file=sys.stderr)
+            return None
     
     def set_rsa_keys(self, public_key_tuple, private_key_tuple):
         """Store RSA keys from (e, n) and (d, n) tuples"""
         self.rsa_public_key = json.dumps({"e": public_key_tuple[0], "n": public_key_tuple[1]})
-        self.rsa_private_key = json.dumps({"d": private_key_tuple[0], "n": private_key_tuple[1]})
+        
+        # Encrypt private key with master RSA key before storage
+        private_key_json = json.dumps({"d": private_key_tuple[0], "n": private_key_tuple[1]})
+        try:
+            from security.asymmetric_encryption import AsymmetricEncryption
+            self.rsa_private_key = AsymmetricEncryption.encrypt_private_key_with_master_key(private_key_json)
+        except Exception as e:
+            # Fallback to plaintext if encryption fails (for backwards compatibility)
+            import sys
+            print(f"[WARNING] Could not encrypt private key: {e}", file=sys.stderr)
+            self.rsa_private_key = private_key_json
     
     def get_ecc_public_key(self):
         """Get ECC public key as dictionary"""
@@ -141,14 +164,37 @@ class User(db.Model):
     
     def get_ecc_private_key(self):
         """Get ECC private key as dictionary"""
-        if self.ecc_private_key:
-            return json.loads(self.ecc_private_key)
-        return None
+        if not self.ecc_private_key:
+            return None
+        
+        try:
+            # Check if key is encrypted (starts with "rsa:")
+            if self.ecc_private_key.startswith("rsa:"):
+                from security.asymmetric_encryption import AsymmetricEncryption
+                decrypted = AsymmetricEncryption.decrypt_private_key_with_master_key(self.ecc_private_key)
+                return json.loads(decrypted)
+            else:
+                # Fallback for unencrypted keys (backwards compatibility)
+                return json.loads(self.ecc_private_key)
+        except Exception as e:
+            import sys
+            print(f"[ERROR] Could not decrypt ECC private key: {e}", file=sys.stderr)
+            return None
     
     def set_ecc_keys(self, public_point, private_scalar):
         """Store ECC keys from Point object and scalar"""
         self.ecc_public_key = json.dumps({"x": public_point.x, "y": public_point.y})
-        self.ecc_private_key = json.dumps({"k": private_scalar})
+        
+        # Encrypt private key with master RSA key before storage
+        private_key_json = json.dumps({"k": private_scalar})
+        try:
+            from security.asymmetric_encryption import AsymmetricEncryption
+            self.ecc_private_key = AsymmetricEncryption.encrypt_private_key_with_master_key(private_key_json)
+        except Exception as e:
+            # Fallback to plaintext if encryption fails
+            import sys
+            print(f"[WARNING] Could not encrypt ECC private key: {e}", file=sys.stderr)
+            self.ecc_private_key = private_key_json
     
     def encrypt_nid_with_rsa(self, data):
         """
@@ -232,8 +278,7 @@ class User(db.Model):
                 except:
                     return str(decrypted_int)
         except Exception as e:
-            import sys
-            print(f"[DECRYPT_FIELD_ERROR] Failed to decrypt: {str(e)}", file=sys.stderr)
+            pass
         
         return None
     

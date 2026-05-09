@@ -142,7 +142,10 @@ class User(db.Model):
             return None
     
     def set_rsa_keys(self, public_key_tuple, private_key_tuple):
-        """Store RSA keys from (e, n) and (d, n) tuples"""
+        """
+        Store RSA keys from (e, n) and (d, n) tuples.
+        Private key is encrypted with master RSA key for secure storage.
+        """
         self.rsa_public_key = json.dumps({"e": public_key_tuple[0], "n": public_key_tuple[1]})
         
         # Encrypt private key with master RSA key before storage
@@ -150,11 +153,18 @@ class User(db.Model):
         try:
             from security.asymmetric_encryption import AsymmetricEncryption
             self.rsa_private_key = AsymmetricEncryption.encrypt_private_key_with_master_key(private_key_json)
-        except Exception as e:
-            # Fallback to plaintext if encryption fails (for backwards compatibility)
+        except ValueError as e:
+            # Master key not configured - provide clear guidance
             import sys
-            print(f"[WARNING] Could not encrypt private key: {e}", file=sys.stderr)
-            self.rsa_private_key = private_key_json
+            print(f"[CRITICAL] RSA Private Key Encryption Failed: {e}", file=sys.stderr)
+            print(f"[CRITICAL] Run 'python setup_encryption.py' to generate and configure master keys", file=sys.stderr)
+            print(f"[CRITICAL] Private keys will NOT be encrypted until this is fixed!", file=sys.stderr)
+            raise RuntimeError("Master encryption keys not configured. Run setup_encryption.py first.")
+        except Exception as e:
+            # Other encryption errors - log and fail
+            import sys
+            print(f"[ERROR] Failed to encrypt RSA private key: {e}", file=sys.stderr)
+            raise RuntimeError(f"Could not encrypt private key: {e}")
     
     def get_ecc_public_key(self):
         """Get ECC public key as dictionary"""
@@ -182,7 +192,10 @@ class User(db.Model):
             return None
     
     def set_ecc_keys(self, public_point, private_scalar):
-        """Store ECC keys from Point object and scalar"""
+        """
+        Store ECC keys from Point object and scalar.
+        Private key is encrypted with master RSA key for secure storage.
+        """
         self.ecc_public_key = json.dumps({"x": public_point.x, "y": public_point.y})
         
         # Encrypt private key with master RSA key before storage
@@ -190,11 +203,18 @@ class User(db.Model):
         try:
             from security.asymmetric_encryption import AsymmetricEncryption
             self.ecc_private_key = AsymmetricEncryption.encrypt_private_key_with_master_key(private_key_json)
-        except Exception as e:
-            # Fallback to plaintext if encryption fails
+        except ValueError as e:
+            # Master key not configured - provide clear guidance
             import sys
-            print(f"[WARNING] Could not encrypt ECC private key: {e}", file=sys.stderr)
-            self.ecc_private_key = private_key_json
+            print(f"[CRITICAL] ECC Private Key Encryption Failed: {e}", file=sys.stderr)
+            print(f"[CRITICAL] Run 'python setup_encryption.py' to generate and configure master keys", file=sys.stderr)
+            print(f"[CRITICAL] Private keys will NOT be encrypted until this is fixed!", file=sys.stderr)
+            raise RuntimeError("Master encryption keys not configured. Run setup_encryption.py first.")
+        except Exception as e:
+            # Other encryption errors - log and fail
+            import sys
+            print(f"[ERROR] Failed to encrypt ECC private key: {e}", file=sys.stderr)
+            raise RuntimeError(f"Could not encrypt private key: {e}")
     
     def encrypt_nid_with_rsa(self, data):
         """

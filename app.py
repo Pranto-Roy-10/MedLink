@@ -32,6 +32,37 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 # Initialize Database
 db.init_app(app)
 
+# Master Key Validation
+def validate_master_keys():
+    """Validate that master encryption keys are configured"""
+    missing_keys = []
+    
+    if not os.getenv('MASTER_RSA_PUBLIC_KEY'):
+        missing_keys.append('MASTER_RSA_PUBLIC_KEY')
+    
+    if not os.getenv('MASTER_RSA_PRIVATE_KEY'):
+        missing_keys.append('MASTER_RSA_PRIVATE_KEY')
+    
+    if missing_keys:
+        print("\n" + "="*70)
+        print("  [WARNING] ENCRYPTION KEYS NOT CONFIGURED")
+        print("="*70)
+        print(f"  Missing environment variables: {', '.join(missing_keys)}")
+        print("\n  To fix this issue:")
+        print("  1. Run: python setup_encryption.py")
+        print("  2. This will generate and store master keys in .env")
+        print("  3. Restart the application")
+        print("\n  Without master keys:")
+        print("  - Private keys will be stored UNENCRYPTED")
+        print("  - This is a SECURITY RISK in production")
+        print("="*70 + "\n")
+        return False
+    
+    return True
+
+# Validate master keys on startup
+master_keys_valid = validate_master_keys()
+
 # System log for live status
 system_log = []
 
@@ -409,6 +440,17 @@ def register():
             session['verification_code'] = verification_code
             return redirect(url_for('verify_registration'))
         
+        except RuntimeError as e:
+            # Handle encryption setup errors
+            if "Master encryption keys not configured" in str(e):
+                db.session.rollback()
+                add_system_log(f"❌ REGISTRATION ERROR: Master encryption keys not configured", "ERROR")
+                return render_template('register.html', 
+                    error='System Error: Encryption keys not configured. Please contact the administrator and ask them to run "python setup_encryption.py"')
+            else:
+                db.session.rollback()
+                add_system_log(f"❌ REGISTRATION ERROR: {str(e)}", "ERROR")
+                return render_template('register.html', error=f'Registration failed: {str(e)}')
         except Exception as e:
             db.session.rollback()
             add_system_log(f"❌ REGISTRATION ERROR: {str(e)}", "ERROR")
@@ -1352,102 +1394,50 @@ def init_sample_data():
     if User.query.first() is not None:
         return
     
-    # Create sample users with cryptographic keys
-    patient = User(
-        username='patient@medlink.com',
-        display_name='Patient User',
-        role='patient',
-        public_key='mock_patient_public_key',
-        encrypted_profile='encrypted_patient_profile',
-        is_approved=True
-    )
-    patient.set_password('patient123')
-    # Generate RSA keys (256-bit for demo speed)
-    patient_rsa = generate_keys(256)
-    patient.set_rsa_keys(patient_rsa[0], patient_rsa[1])
-    # Generate ECC keys
-    try:
-        curve = create_test_curve()
-        patient_ecc_scalar = random.randint(1, 1000)  # Random private key
-        # Use point (0, 1) which is on the curve y² = x³ + x + 1 (mod 1009)
-        base_point = Point(0, 1, curve)
-        patient_ecc_public = curve.scalar_multiplication(patient_ecc_scalar, base_point)
-        patient.set_ecc_keys(patient_ecc_public, patient_ecc_scalar)
-    except Exception as e:
-        print(f"[WARNING] Failed to generate ECC keys for patient: {e}")
-        pass  # Use defaults if curve fails
+    # Helper function to safely create a user with encryption
+    def create_user_with_keys(username, display_name, role, password):
+        """Create a user and generate encrypted keys"""
+        user = User(
+            username=username,
+            display_name=display_name,
+            role=role,
+            public_key=f'mock_{role}_public_key',
+            encrypted_profile=f'encrypted_{role}_profile',
+            is_approved=True
+        )
+        user.set_password(password)
+        
+        # Generate RSA keys (256-bit for demo speed)
+        try:
+            rsa_keys = generate_keys(256)
+            user.set_rsa_keys(rsa_keys[0], rsa_keys[1])
+        except RuntimeError as e:
+            # This means master keys aren't configured
+            raise RuntimeError(f"Cannot create sample user {username}: {e}")
+        
+        # Generate ECC keys
+        try:
+            curve = create_test_curve()
+            ecc_scalar = random.randint(1, 1000)
+            base_point = Point(0, 1, curve)
+            ecc_public = curve.scalar_multiplication(ecc_scalar, base_point)
+            user.set_ecc_keys(ecc_public, ecc_scalar)
+        except Exception as e:
+            print(f"[WARNING] Failed to generate ECC keys for {username}: {e}")
+            # ECC failure is not critical - continue without it
+            pass
+        
+        return user
     
-    doctor = User(
-        username='doctor@medlink.com',
-        display_name='Dr. Doctor',
-        role='doctor',
-        public_key='mock_doctor_public_key',
-        encrypted_profile='encrypted_doctor_profile',
-        is_approved=True
-    )
-    doctor.set_password('doctor123')
-    # Generate RSA keys
-    doctor_rsa = generate_keys(256)
-    doctor.set_rsa_keys(doctor_rsa[0], doctor_rsa[1])
-    # Generate ECC keys
+    # Create sample users
     try:
-        curve = create_test_curve()
-        doctor_ecc_scalar = random.randint(1, 1000)
-        # Use point (0, 1) which is on the curve y² = x³ + x + 1 (mod 1009)
-        base_point = Point(0, 1, curve)
-        doctor_ecc_public = curve.scalar_multiplication(doctor_ecc_scalar, base_point)
-        doctor.set_ecc_keys(doctor_ecc_public, doctor_ecc_scalar)
-    except Exception as e:
-        print(f"[WARNING] Failed to generate ECC keys for doctor: {e}")
-        pass
-    
-    specialist = User(
-        username='specialist@medlink.com',
-        display_name='Dr. Specialist',
-        role='specialist',
-        public_key='mock_specialist_public_key',
-        encrypted_profile='encrypted_specialist_profile',
-        is_approved=True
-    )
-    specialist.set_password('specialist123')
-    # Generate RSA keys
-    specialist_rsa = generate_keys(256)
-    specialist.set_rsa_keys(specialist_rsa[0], specialist_rsa[1])
-    # Generate ECC keys
-    try:
-        curve = create_test_curve()
-        specialist_ecc_scalar = random.randint(1, 1000)
-        # Use point (0, 1) which is on the curve y² = x³ + x + 1 (mod 1009)
-        base_point = Point(0, 1, curve)
-        specialist_ecc_public = curve.scalar_multiplication(specialist_ecc_scalar, base_point)
-        specialist.set_ecc_keys(specialist_ecc_public, specialist_ecc_scalar)
-    except Exception as e:
-        print(f"[WARNING] Failed to generate ECC keys for specialist: {e}")
-        pass
-    
-    admin = User(
-        username='admin@medlink.com',
-        display_name='System Admin',
-        role='admin',
-        public_key='mock_admin_public_key',
-        encrypted_profile='encrypted_admin_profile',
-        is_approved=True
-    )
-    admin.set_password('admin123')
-    # Generate RSA keys
-    admin_rsa = generate_keys(256)
-    admin.set_rsa_keys(admin_rsa[0], admin_rsa[1])
-    # Generate ECC keys
-    try:
-        curve = create_test_curve()
-        admin_ecc_scalar = random.randint(1, 1000)
-        # Use point (0, 1) which is on the curve y² = x³ + x + 1 (mod 1009)
-        base_point = Point(0, 1, curve)
-        admin_ecc_public = curve.scalar_multiplication(admin_ecc_scalar, base_point)
-        admin.set_ecc_keys(admin_ecc_public, admin_ecc_scalar)
-    except Exception as e:
-        print(f"[WARNING] Failed to generate ECC keys for admin: {e}")
-        pass
+        patient = create_user_with_keys('patient@medlink.com', 'Patient User', 'patient', 'patient123')
+        doctor = create_user_with_keys('doctor@medlink.com', 'Dr. Doctor', 'doctor', 'doctor123')
+        specialist = create_user_with_keys('specialist@medlink.com', 'Dr. Specialist', 'specialist', 'specialist123')
+        admin = create_user_with_keys('admin@medlink.com', 'System Admin', 'admin', 'admin123')
+    except RuntimeError as e:
+        # Re-raise encryption setup errors
+        raise e
     
     db.session.add(patient)
     db.session.add(doctor)
@@ -2420,8 +2410,24 @@ if __name__ == '__main__':
     with app.app_context():
         # Create all database tables
         db.create_all()
+        
         # Initialize sample data with cryptographic functions
-        init_sample_data()
+        try:
+            init_sample_data()
+        except RuntimeError as e:
+            if "Master encryption keys not configured" in str(e):
+                print("\n" + "="*70)
+                print("  [CRITICAL] SAMPLE DATA INITIALIZATION FAILED")
+                print("="*70)
+                print("  Master encryption keys are not configured!")
+                print("\n  To fix this issue:")
+                print("  1. Run: python setup_encryption.py")
+                print("  2. This will generate and store master keys in .env")
+                print("  3. Restart the application")
+                print("="*70 + "\n")
+                raise
+            else:
+                raise
     
     print("""
     ========================================

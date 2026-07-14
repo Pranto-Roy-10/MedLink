@@ -139,7 +139,12 @@ def auto_rotate_keys_on_login(user):
         db.session.rollback()
         add_system_log(f"❌ Key rotation failed: {str(e)}", "ERROR")
     
+DEMO_MODE = os.environ.get('DEMO_MODE') == '1'
+
 def send_otp_email(to_email, otp_code, purpose="login"):
+    if DEMO_MODE:
+        # Demo deployment: OTP is displayed on the verification page instead of emailed
+        return
     sender_email = os.environ.get("SMTP_USERNAME")
     sender_password = os.environ.get("SMTP_PASSWORD")
 
@@ -350,7 +355,8 @@ def verify_2fa():
                                   user=User.query.get(session.get('pending_2fa_user_id')))
     
     user = User.query.get(session.get('pending_2fa_user_id'))
-    return render_template('verify_2fa.html', user=user)
+    demo_otp = session.get('2fa_challenge') if DEMO_MODE else None
+    return render_template('verify_2fa.html', user=user, demo_otp=demo_otp)
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
@@ -525,7 +531,8 @@ def verify_registration():
     user_id = session.get('pending_user_id')
     user = User.query.get(user_id)
     
-    return render_template('verify_registration.html', user=user)
+    demo_otp = session.get('verification_code') if DEMO_MODE else None
+    return render_template('verify_registration.html', user=user, demo_otp=demo_otp)
 
 @app.route('/dashboard')
 def dashboard():

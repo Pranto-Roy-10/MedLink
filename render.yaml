@@ -16,8 +16,8 @@ services:
         generateValue: true
       - key: DATABASE_URL
         sync: false
-      - key: BREVO_API_KEY
-        sync: false
+      - key: DEMO_MODE
+        value: "1"
       - key: SMTP_USERNAME
         sync: false
       - key: SMTP_PASSWORD

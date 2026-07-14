@@ -143,8 +143,8 @@ def send_otp_email(to_email, otp_code, purpose="login"):
     sender_email = os.environ.get("SMTP_USERNAME")
     sender_password = os.environ.get("SMTP_PASSWORD")
 
-    if not sender_email or not sender_password:
-        raise Exception("SMTP_USERNAME or SMTP_PASSWORD is missing")
+    if not sender_email or (not sender_password and not os.environ.get("BREVO_API_KEY")):
+        raise Exception("Email not configured: set BREVO_API_KEY or SMTP_USERNAME/SMTP_PASSWORD")
 
     # Different messages for different purposes
     if purpose == "registration":
@@ -177,12 +177,34 @@ This code will expire soon.
 If this was not you, please secure your account immediately.
 """
 
+    # Brevo HTTP API (works on hosts that block SMTP ports, e.g. Render free tier)
+    brevo_api_key = os.environ.get("BREVO_API_KEY")
+    if brevo_api_key:
+        import urllib.request, json as _json
+        payload = _json.dumps({
+            "sender": {"name": "MedLink", "email": sender_email},
+            "to": [{"email": to_email}],
+            "subject": subject,
+            "textContent": body,
+        }).encode()
+        req = urllib.request.Request(
+            "https://api.brevo.com/v3/smtp/email",
+            data=payload,
+            headers={"api-key": brevo_api_key, "Content-Type": "application/json"},
+            method="POST",
+        )
+        with urllib.request.urlopen(req, timeout=20) as resp:
+            if resp.status not in (200, 201, 202):
+                raise Exception(f"Brevo API error: HTTP {resp.status}")
+        return
+
+    # Fallback: Gmail SMTP (local development)
     message = MIMEText(body)
     message["Subject"] = subject
     message["From"] = sender_email
     message["To"] = to_email
 
-    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+    with smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=20) as server:
         server.login(sender_email, sender_password)
         server.sendmail(sender_email, to_email, message.as_string())
 

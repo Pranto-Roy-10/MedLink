@@ -2412,8 +2412,10 @@ if __name__ == '__main__':
         db.create_all()
         
         # Initialize sample data with cryptographic functions
+        # (disabled in production unless CREATE_DEMO_DATA=1)
         try:
-            init_sample_data()
+            if os.environ.get('CREATE_DEMO_DATA', '1') == '1':
+                init_sample_data()
         except RuntimeError as e:
             if "Master encryption keys not configured" in str(e):
                 print("\n" + "="*70)

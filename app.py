@@ -19,7 +19,7 @@ from security.encryption_utils import (
 import smtplib
 from email.mime.text import MIMEText
 app = Flask(__name__)
-app.secret_key = 'your-secret-key-change-in-production'
+app.secret_key = os.environ.get('SECRET_KEY', 'your-secret-key-change-in-production')
 
 # Initialize Socket.IO for real-time chat
 socketio = SocketIO(app, cors_allowed_origins="*")
@@ -2455,4 +2455,6 @@ if __name__ == '__main__':
     ========================================
     """)
     
-    socketio.run(app, debug=True, host='0.0.0.0', port=5001, allow_unsafe_werkzeug=True)
+    port = int(os.environ.get('PORT', 5001))
+    debug = os.environ.get('FLASK_DEBUG', '1') == '1'
+    socketio.run(app, debug=debug, host='0.0.0.0', port=port, allow_unsafe_werkzeug=True)
